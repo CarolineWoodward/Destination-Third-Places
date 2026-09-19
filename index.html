@@ -10,16 +10,24 @@
 
   .row { display:flex; gap:24px; align-items:stretch; margin:50px 0; }
 
-  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; flex-direction:column; }
+  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; cursor:pointer; transition:transform 0.15s ease; }
+  .entry:hover { transform:translateY(-3px); }
 
-  .frame { width:100%; height:220px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
+  .frame { flex:1 1 0; min-width:0; height:280px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
   .frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
 
-  .note { background:#2b2b2b; color:#fdf6e3; padding:14px 16px; font-size:0.9rem; line-height:1.45; border-left:6px solid var(--accent); }
+  .note { flex:0 0 200px; background:#2b2b2b; color:#fdf6e3; padding:16px 18px; font-size:0.95rem; line-height:1.5; border-left:6px solid var(--accent); display:flex; flex-direction:column; justify-content:center; gap:8px; }
+  .entry-title { font-weight:700; font-size:1.05rem; margin:0; }
 
-  .entry-side { flex-direction:row; }
-  .entry-side .frame { flex:1 1 0; min-width:0; height:220px; }
-  .entry-side .note { flex:0 0 130px; display:flex; align-items:center; }
+  /* Modal pop-up */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:100; padding:30px; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#fff; max-width:900px; width:100%; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; }
+  .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .modal-note { background:#2b2b2b; color:#fdf6e3; padding:20px 26px; font-size:1.05rem; line-height:1.5; border-top:6px solid var(--accent); }
+  .modal-note .entry-title { font-size:1.2rem; margin-bottom:6px; }
+  .modal-close { position:absolute; top:16px; right:24px; background:none; border:none; color:#fff; font-size:2rem; line-height:1; cursor:pointer; z-index:101; }
 </style>
 </head>
 <body>
@@ -27,27 +35,55 @@
 <h1>My Project</h1>
 <p>A short description of what this collection documents.</p>
 
-<!-- ROW: three "beside" entries, left to right -->
+<!-- ROW: two entries, left to right -->
 <div class="row">
 
-  <div class="entry entry-side">
-    <div class="frame"><img src="images/1. Orange County Arboretum.PNG" alt="Description"></div>
-    <div class="note">Montgomery, NY
-
-A park where people can gather and admire plants. People can bring food and borrow picnic tables. </div>
+  <div class="entry" onclick="openModal(this)">
+    <div class="frame"><img src="images/yourfile1.png" alt="Description"></div>
+    <div class="note">
+      <div class="entry-title">Title for entry 1</div>
+      <div>Annotation text for image 1.</div>
+    </div>
   </div>
 
-  <div class="entry entry-side">
+  <div class="entry" onclick="openModal(this)">
     <div class="frame"><img src="images/yourfile2.png" alt="Description"></div>
-    <div class="note">Annotation text for image 2.</div>
-  </div>
-
-  <div class="entry entry-side">
-    <div class="frame"><img src="images/yourfile3.png" alt="Description"></div>
-    <div class="note">Annotation text for image 3.</div>
+    <div class="note">
+      <div class="entry-title">Title for entry 2</div>
+      <div>Annotation text for image 2.</div>
+    </div>
   </div>
 
 </div>
+
+<!-- The pop-up itself, hidden until an entry is clicked -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+  <button class="modal-close" onclick="closeModal()">&times;</button>
+  <div class="modal-box">
+    <div class="modal-frame"><img id="modalImg" src="" alt=""></div>
+    <div class="modal-note" id="modalNote"></div>
+  </div>
+</div>
+
+<script>
+  function openModal(entryEl) {
+    const img = entryEl.querySelector('.frame img');
+    const note = entryEl.querySelector('.note').innerHTML;
+    document.getElementById('modalImg').src = img.src;
+    document.getElementById('modalImg').alt = img.alt;
+    document.getElementById('modalNote').innerHTML = note;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeModalOnBackdrop(e) {
+    if (e.target.id === 'modalOverlay') closeModal();
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
 
 </body>
 </html>
