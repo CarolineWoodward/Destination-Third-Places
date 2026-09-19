@@ -5,26 +5,21 @@
 <title>Caroline Woodward — My Project</title>
 <style>
   :root { --accent:#d98c3f; }
-  body { font-family: Georgia, serif; background:#f7f5f2; color:#2b2b2b; max-width:950px; margin:0 auto; padding:40px 20px; }
+  body { font-family: Georgia, serif; background:#f7f5f2; color:#2b2b2b; max-width:1100px; margin:0 auto; padding:40px 20px; }
   h1 { font-weight:400; border-bottom:2px solid #2b2b2b; padding-bottom:10px; }
 
-  .entry { max-width:750px; margin:50px auto; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; }
+  .row { display:flex; gap:24px; align-items:stretch; margin:50px 0; }
 
-  /* Fixed-size box every image sits inside, regardless of its own shape */
-  .frame { width:100%; height:380px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
+  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; flex-direction:column; }
+
+  .frame { width:100%; height:220px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
   .frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
 
-  .note { background:#2b2b2b; color:#fdf6e3; padding:16px 22px; font-size:1.05rem; line-height:1.5; border-left:6px solid var(--accent); }
-  .note-above, .note-below { border-left:none; border-top:6px solid var(--accent); }
+  .note { background:#2b2b2b; color:#fdf6e3; padding:14px 16px; font-size:0.9rem; line-height:1.45; border-left:6px solid var(--accent); }
 
-  .entry-side { display:flex; align-items:stretch; }
-  .entry-side .frame { flex:1 1 0; min-width:0; height:380px; }
-  .entry-side .note { flex:0 0 240px; display:flex; align-items:center; border-top:none; border-left:6px solid var(--accent); }
-  .entry-side.reverse { flex-direction:row-reverse; }
-  .entry-side.reverse .note { border-left:none; border-right:6px solid var(--accent); }
-
-  .entry-overlay { position:relative; }
-  .entry-overlay .note { position:absolute; bottom:0; left:0; right:0; border-left:none; border-top:6px solid var(--accent); }
+  .entry-side { flex-direction:row; }
+  .entry-side .frame { flex:1 1 0; min-width:0; height:220px; }
+  .entry-side .note { flex:0 0 130px; display:flex; align-items:center; }
 </style>
 </head>
 <body>
@@ -32,28 +27,26 @@
 <h1>My Project</h1>
 <p>A short description of what this collection documents.</p>
 
-<!-- ENTRY 1 — annotation ABOVE -->
-<div class="entry">
-  <div class="note note-above">Annotation text for image 1.</div>
-  <div class="frame"><img src="images/yourfile1.png" alt="Description"></div>
-</div>
+<!-- ROW: three "beside" entries, left to right -->
+<div class="row">
 
-<!-- ENTRY 2 — annotation BELOW -->
-<div class="entry">
-  <div class="frame"><img src="images/yourfile2.png" alt="Description"></div>
-  <div class="note note-below">Annotation text for image 2.</div>
-</div>
+  <div class="entry entry-side">
+    <div class="frame"><img src="images/1. Orange County Arboretum.PNG" alt="Description"></div>
+    <div class="note">Montgomery, NY
 
-<!-- ENTRY 3 — annotation BESIDE -->
-<div class="entry entry-side">
-  <div class="frame"><img src="images/yourfile3.png" alt="Description"></div>
-  <div class="note">Annotation text for image 3.</div>
-</div>
+A park where people can gather and admire plants. People can bring food and borrow picnic tables. </div>
+  </div>
 
-<!-- ENTRY 4 — annotation OVERLAID -->
-<div class="entry entry-overlay">
-  <div class="frame"><img src="images/yourfile4.png" alt="Description"></div>
-  <div class="note">Annotation text for image 4.</div>
+  <div class="entry entry-side">
+    <div class="frame"><img src="images/yourfile2.png" alt="Description"></div>
+    <div class="note">Annotation text for image 2.</div>
+  </div>
+
+  <div class="entry entry-side">
+    <div class="frame"><img src="images/yourfile3.png" alt="Description"></div>
+    <div class="note">Annotation text for image 3.</div>
+  </div>
+
 </div>
 
 </body>
