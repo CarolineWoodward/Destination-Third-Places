@@ -19,14 +19,14 @@
   .note { flex:0 0 200px; background:#2b2b2b; color:#fdf6e3; padding:16px 18px; font-size:0.95rem; line-height:1.5; border-left:6px solid var(--accent); display:flex; flex-direction:column; justify-content:center; gap:8px; }
   .entry-title { font-weight:700; font-size:1.05rem; margin:0; }
 
-  /* Modal pop-up */
+  /* Modal pop-up — image and note side by side */
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:100; padding:30px; }
   .modal-overlay.open { display:flex; }
-  .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
-  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; }
+  .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .modal-note { background:#2b2b2b; color:#fdf6e3; padding:20px 26px; font-size:1.05rem; line-height:1.5; border-top:6px solid var(--accent); }
-  .modal-note .entry-title { font-size:1.2rem; margin-bottom:6px; }
+  .modal-note { flex:0 0 300px; background:#2b2b2b; color:#fdf6e3; padding:24px 28px; font-size:1.05rem; line-height:1.6; border-left:6px solid var(--accent); overflow-y:auto; display:flex; flex-direction:column; justify-content:center; }
+  .modal-note .entry-title { font-size:1.25rem; margin-bottom:10px; }
   .modal-close { position:absolute; top:16px; right:24px; background:none; border:none; color:#fff; font-size:2rem; line-height:1; cursor:pointer; z-index:101; }
 </style>
 </head>
@@ -39,20 +39,18 @@
 <div class="row">
 
   <div class="entry" onclick="openModal(this)">
-    <div class="frame"><img src="images/1. Orange County Arboretum.PNG " alt="Description"></div>
+    <div class="frame"><img src="images/1. Orange County Arboretum.PNG" alt="Orange County Arboretum"></div>
     <div class="note">
-      <div class="entry-title">Orange County Arboretum </div>
-      <div>Montgomery, NY 
-
-A park where people can gather and admire plants. People can bring food and borrow picnic tables. </div>
+      <div class="entry-title">Orange County Arboretum</div>
+      <div>Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables.</div>
     </div>
   </div>
 
   <div class="entry" onclick="openModal(this)">
-    <div class="frame"><img src="images/yourfile2.png" alt="Description"></div>
+    <div class="frame"><img src="images/2. The Rock Wall Pub & Grub.PNG" alt="The Rock Wall Pub & Grub"></div>
     <div class="note">
-      <div class="entry-title">Title for entry 2</div>
-      <div>Annotation text for image 2.</div>
+      <div class="entry-title">The Rock Wall Pub & Grub</div>
+      <div>A local bar and restaurant with a variety of events meant to bring people together.</div>
     </div>
   </div>
 
@@ -62,16 +60,19 @@ A park where people can gather and admire plants. People can bring food and borr
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
   <button class="modal-close" onclick="closeModal()">&times;</button>
   <div class="modal-box" id="modalBox">
-    <div class="modal-frame"><img id="modalImg" src="" alt=""></div>
+    <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
     <div class="modal-note" id="modalNote"></div>
   </div>
 </div>
 
 <script>
+  const MODAL_NOTE_WIDTH = 300;
+
   function openModal(entryEl) {
     const img = entryEl.querySelector('.frame img');
     const note = entryEl.querySelector('.note').innerHTML;
     const modalImg = document.getElementById('modalImg');
+    const modalFrame = document.getElementById('modalFrame');
     const modalBox = document.getElementById('modalBox');
 
     document.getElementById('modalNote').innerHTML = note;
@@ -79,13 +80,16 @@ A park where people can gather and admire plants. People can bring food and borr
 
     modalImg.onload = function () {
       const maxFrameHeight = window.innerHeight * 0.6;
-      const maxAllowedWidth = window.innerWidth * 0.9;
+      const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
       let renderedHeight = Math.min(maxFrameHeight, modalImg.naturalHeight);
       let renderedWidth = (modalImg.naturalWidth / modalImg.naturalHeight) * renderedHeight;
       if (renderedWidth > maxAllowedWidth) {
         renderedWidth = maxAllowedWidth;
+        renderedHeight = (modalImg.naturalHeight / modalImg.naturalWidth) * renderedWidth;
       }
-      modalBox.style.width = renderedWidth + 'px';
+      modalFrame.style.width = renderedWidth + 'px';
+      modalFrame.style.height = renderedHeight + 'px';
+      modalBox.style.width = (renderedWidth + MODAL_NOTE_WIDTH) + 'px';
     };
     modalImg.src = img.src;
     modalImg.alt = img.alt;
