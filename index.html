@@ -22,7 +22,7 @@
   /* Modal pop-up */
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:100; padding:30px; }
   .modal-overlay.open { display:flex; }
-  .modal-box { background:#fff; max-width:900px; width:100%; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
   .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
   .modal-note { background:#2b2b2b; color:#fdf6e3; padding:20px 26px; font-size:1.05rem; line-height:1.5; border-top:6px solid var(--accent); }
@@ -39,9 +39,9 @@
 <div class="row">
 
   <div class="entry" onclick="openModal(this)">
-    <div class="frame"><img src="images/1. Orange County Arboretum.PNG" alt="Description"></div>
+    <div class="frame"><img src="images/1. Orange County Arboretum.PNG " alt="Description"></div>
     <div class="note">
-      <div class="entry-title">Orange County Arboretum</div>
+      <div class="entry-title">Orange County Arboretum </div>
       <div>Montgomery, NY 
 
 A park where people can gather and admire plants. People can bring food and borrow picnic tables. </div>
@@ -61,7 +61,7 @@ A park where people can gather and admire plants. People can bring food and borr
 <!-- The pop-up itself, hidden until an entry is clicked -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
   <button class="modal-close" onclick="closeModal()">&times;</button>
-  <div class="modal-box">
+  <div class="modal-box" id="modalBox">
     <div class="modal-frame"><img id="modalImg" src="" alt=""></div>
     <div class="modal-note" id="modalNote"></div>
   </div>
@@ -71,10 +71,24 @@ A park where people can gather and admire plants. People can bring food and borr
   function openModal(entryEl) {
     const img = entryEl.querySelector('.frame img');
     const note = entryEl.querySelector('.note').innerHTML;
-    document.getElementById('modalImg').src = img.src;
-    document.getElementById('modalImg').alt = img.alt;
+    const modalImg = document.getElementById('modalImg');
+    const modalBox = document.getElementById('modalBox');
+
     document.getElementById('modalNote').innerHTML = note;
     document.getElementById('modalOverlay').classList.add('open');
+
+    modalImg.onload = function () {
+      const maxFrameHeight = window.innerHeight * 0.6;
+      const maxAllowedWidth = window.innerWidth * 0.9;
+      let renderedHeight = Math.min(maxFrameHeight, modalImg.naturalHeight);
+      let renderedWidth = (modalImg.naturalWidth / modalImg.naturalHeight) * renderedHeight;
+      if (renderedWidth > maxAllowedWidth) {
+        renderedWidth = maxAllowedWidth;
+      }
+      modalBox.style.width = renderedWidth + 'px';
+    };
+    modalImg.src = img.src;
+    modalImg.alt = img.alt;
   }
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
