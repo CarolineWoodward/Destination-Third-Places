@@ -2,29 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Caroline Woodward — My Project</title>
+<title>Caroline Woodward — Destination: Third Place</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Source+Serif+Pro&display=swap');
   * { box-sizing: border-box; }
-  :root { --accent:#c98b7f; }
-  body { font-family:'Source Serif Pro', serif; background:#f7f1e8; color:#4a4a4a; max-width:1100px; margin:0 auto; padding:40px 20px; }
-  h1 { font-family:'Caveat', cursive; font-weight:700; font-size:3rem; color:#4a4a4a; border-bottom:2px solid #8a9a7e; padding-bottom:6px; }
+  :root { --accent:#d98c3f; }
+  body { font-family: Georgia, serif; background:#f7f5f2; color:#2b2b2b; max-width:1100px; margin:0 auto; padding:40px 20px; }
+  h1 { font-weight:400; border-bottom:2px solid #2b2b2b; padding-bottom:10px; }
 
   .row { display:flex; gap:24px; align-items:stretch; margin:50px 0; }
-  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:6px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; cursor:pointer; transition:transform 0.15s ease; }
+
+  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; cursor:pointer; transition:transform 0.15s ease; }
   .entry:hover { transform:translateY(-3px); }
+
   .frame { flex:1 1 0; min-width:0; height:280px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
   .frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .note { flex:0 0 200px; background:#8a9a7e; color:#f7f1e8; padding:16px 18px; font-size:0.95rem; line-height:1.5; border-left:6px solid var(--accent); display:flex; flex-direction:column; justify-content:center; gap:8px; }
-  .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.5rem; margin:0; }
+
+  .note { flex:0 0 200px; background:#2b2b2b; color:#fdf6e3; padding:16px 18px; font-size:0.95rem; line-height:1.5; border-left:6px solid var(--accent); display:flex; flex-direction:column; justify-content:center; gap:8px; }
+  .entry-title { font-weight:700; font-size:1.05rem; margin:0; }
+
+  .gallery { display:none; }
 
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:100; padding:30px; }
   .modal-overlay.open { display:flex; }
-  .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:6px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+
+  .modal-visual { display:flex; flex-direction:column; flex:0 0 auto; }
   .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .modal-note { flex:0 0 300px; min-height:0; background:#8a9a7e; color:#f7f1e8; padding:24px 28px; font-size:1.05rem; line-height:1.6; border-left:6px solid var(--accent); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
-  .modal-note .entry-title { font-size:1.7rem; margin-bottom:10px; }
+
+  .modal-branch { display:none; flex-direction:column; }
+  .modal-branch.show { display:flex; }
+  .connector-svg { display:block; }
+  .modal-thumbs { display:flex; gap:8px; padding:0 0 10px 0; overflow-x:auto; }
+  .modal-thumbs img { height:60px; width:60px; object-fit:cover; border-radius:4px; cursor:pointer; border:3px solid transparent; opacity:0.75; flex:0 0 auto; }
+  .modal-thumbs img:hover { opacity:1; }
+  .modal-thumbs img.active { border-color:#2b2b2b; opacity:1; }
+
+  .modal-note { flex:0 0 300px; min-height:0; background:#2b2b2b; color:#fdf6e3; padding:24px 28px; font-size:1.05rem; line-height:1.6; border-left:6px solid var(--accent); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
+  .modal-note .entry-title { font-size:1.25rem; margin-bottom:10px; }
   .modal-close { position:absolute; top:16px; right:24px; background:none; border:none; color:#fff; font-size:2rem; line-height:1; cursor:pointer; z-index:101; }
 </style>
 </head>
@@ -33,7 +48,6 @@
 <h1>My Project</h1>
 <p>A short description of what this collection documents.</p>
 
-<!-- ROW: two entries, left to right -->
 <div class="row">
 
   <div class="entry" onclick="openModal(this)">
@@ -41,6 +55,8 @@
     <div class="note">
       <div class="entry-title">Orange County Arboretum</div>
       <div>Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables.</div>
+    </div>
+    <div class="gallery">
     </div>
   </div>
 
@@ -50,58 +66,13 @@
       <div class="entry-title">The Rock Wall Pub & Grub</div>
       <div>A local bar and restaurant with a variety of events meant to bring people together.</div>
     </div>
+    <div class="gallery">
+    </div>
   </div>
 
 </div>
 
-<!-- The pop-up itself, hidden until an entry is clicked -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
   <button class="modal-close" onclick="closeModal()">&times;</button>
   <div class="modal-box" id="modalBox">
-    <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
-    <div class="modal-note" id="modalNote"></div>
-  </div>
-</div>
-
-<script>
-  const MODAL_NOTE_WIDTH = 300;
-
-  function openModal(entryEl) {
-    const img = entryEl.querySelector('.frame img');
-    const note = entryEl.querySelector('.note').innerHTML;
-    const modalImg = document.getElementById('modalImg');
-    const modalFrame = document.getElementById('modalFrame');
-    const modalBox = document.getElementById('modalBox');
-
-    document.getElementById('modalNote').innerHTML = note;
-    document.getElementById('modalOverlay').classList.add('open');
-
-    modalImg.onload = function () {
-      const maxFrameHeight = window.innerHeight * 0.6;
-      const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
-      let renderedHeight = Math.min(maxFrameHeight, modalImg.naturalHeight);
-      let renderedWidth = (modalImg.naturalWidth / modalImg.naturalHeight) * renderedHeight;
-      if (renderedWidth > maxAllowedWidth) {
-        renderedWidth = maxAllowedWidth;
-        renderedHeight = (modalImg.naturalHeight / modalImg.naturalWidth) * renderedWidth;
-      }
-      modalFrame.style.width = renderedWidth + 'px';
-      modalFrame.style.height = renderedHeight + 'px';
-      modalBox.style.width = (renderedWidth + MODAL_NOTE_WIDTH) + 'px';
-    };
-    modalImg.src = img.src;
-    modalImg.alt = img.alt;
-  }
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-  function closeModalOnBackdrop(e) {
-    if (e.target.id === 'modalOverlay') closeModal();
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
-  });
-</script>
-
-</body>
-</html>
+    <div
