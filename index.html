@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Caroline Woodward — Destination: Third Place</title>
+<title>Caroline Woodward — My Project</title>
 <style>
   * { box-sizing: border-box; }
   :root { --accent:#d98c3f; }
@@ -75,4 +75,113 @@
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
   <button class="modal-close" onclick="closeModal()">&times;</button>
   <div class="modal-box" id="modalBox">
-    <div
+    <div class="modal-visual">
+      <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
+      <div class="modal-branch" id="modalBranch">
+        <div id="connectorContainer"></div>
+        <div class="modal-thumbs" id="modalThumbs"></div>
+      </div>
+    </div>
+    <div class="modal-note" id="modalNote"></div>
+  </div>
+</div>
+
+<script>
+  const MODAL_NOTE_WIDTH = 300;
+  const MODAL_MIN_HEIGHT = 340;
+  const THUMB_SIZE = 60;
+  const THUMB_GAP = 8;
+
+  function sizeModalToImage(imgEl) {
+    const modalFrame = document.getElementById('modalFrame');
+    const modalBox = document.getElementById('modalBox');
+    const maxFrameHeight = window.innerHeight * 0.6;
+    const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
+
+    let renderedHeight = Math.min(maxFrameHeight, imgEl.naturalHeight);
+    let renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+    if (renderedWidth > maxAllowedWidth) {
+      renderedWidth = maxAllowedWidth;
+      renderedHeight = (imgEl.naturalHeight / imgEl.naturalWidth) * renderedWidth;
+    }
+    if (renderedHeight < MODAL_MIN_HEIGHT) {
+      renderedHeight = MODAL_MIN_HEIGHT;
+      renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+      if (renderedWidth > maxAllowedWidth) renderedWidth = maxAllowedWidth;
+    }
+    modalFrame.style.width = renderedWidth + 'px';
+    modalFrame.style.height = renderedHeight + 'px';
+    modalBox.style.width = (renderedWidth + MODAL_NOTE_WIDTH) + 'px';
+    return renderedWidth;
+  }
+
+  function buildBranchConnector(frameWidth, thumbCount) {
+    const container = document.getElementById('connectorContainer');
+    container.innerHTML = '';
+    if (thumbCount < 1) return;
+
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    const svgHeight = 34;
+    const midX = frameWidth / 2;
+    const rowWidth = thumbCount * THUMB_SIZE + (thumbCount - 1) * THUMB_GAP;
+    const startX = Math.max(0, (frameWidth - rowWidth) / 2);
+
+    let paths = '';
+    for (let i = 0; i < thumbCount; i++) {
+      const cx = startX + i * (THUMB_SIZE + THUMB_GAP) + THUMB_SIZE / 2;
+      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.7}, ${cx} ${svgHeight * 0.3}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
+    }
+
+    container.innerHTML = `<svg class="connector-svg" width="${frameWidth}" height="${svgHeight}" viewBox="0 0 ${frameWidth} ${svgHeight}">${paths}</svg>`;
+  }
+
+  function openModal(entryEl) {
+    const mainImg = entryEl.querySelector('.frame img');
+    const note = entryEl.querySelector('.note').innerHTML;
+    const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
+    const modalImg = document.getElementById('modalImg');
+    const modalThumbs = document.getElementById('modalThumbs');
+    const modalBranch = document.getElementById('modalBranch');
+
+    document.getElementById('modalNote').innerHTML = note;
+    document.getElementById('modalOverlay').classList.add('open');
+    modalThumbs.innerHTML = '';
+
+    if (extraImgs.length > 0) {
+      modalBranch.classList.add('show');
+      extraImgs.forEach(function (imgSource) {
+        const thumb = document.createElement('img');
+        thumb.src = imgSource.src;
+        thumb.alt = imgSource.alt || '';
+        thumb.onclick = function () {
+          modalImg.src = imgSource.src;
+          modalImg.alt = imgSource.alt || '';
+          modalThumbs.querySelectorAll('img').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+        };
+        modalThumbs.appendChild(thumb);
+      });
+    } else {
+      modalBranch.classList.remove('show');
+    }
+
+    modalImg.onload = function () {
+      const frameWidth = sizeModalToImage(modalImg);
+      buildBranchConnector(frameWidth, extraImgs.length);
+    };
+    modalImg.src = mainImg.src;
+    modalImg.alt = mainImg.alt;
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeModalOnBackdrop(e) {
+    if (e.target.id === 'modalOverlay') closeModal();
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+</body>
+</html>
