@@ -27,10 +27,10 @@
   .modal-box { background:#fff; width:auto; max-width:90vw; max-height:90vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
 
   .modal-visual { display:flex; flex-direction:column; flex:0 0 auto; }
-  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
+  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; position:relative; z-index:2; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
 
-  .modal-branch { display:none; flex-direction:column; }
+  .modal-branch { display:none; flex-direction:column; margin-top:-1px; }
   .modal-branch.show { display:flex; }
   .connector-svg { display:block; }
   .modal-thumbs { display:flex; gap:8px; padding:0 0 10px 0; overflow-x:auto; }
@@ -57,7 +57,7 @@
       <div>Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables.</div>
     </div>
     <div class="gallery">
-      <img src="1. Social Media.PNG" alt="Description">
+      <img src="images/1. Social Media.PNG" alt="Description">
     </div>
   </div>
 
@@ -127,10 +127,10 @@
     const rowWidth = thumbCount * THUMB_SIZE + (thumbCount - 1) * THUMB_GAP;
     const startX = Math.max(0, (frameWidth - rowWidth) / 2);
 
-    let paths = '';
+    let paths = `<circle cx="${midX}" cy="2" r="4" fill="${accentColor}" />`;
     for (let i = 0; i < thumbCount; i++) {
       const cx = startX + i * (THUMB_SIZE + THUMB_GAP) + THUMB_SIZE / 2;
-      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.7}, ${cx} ${svgHeight * 0.3}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
+      paths += `<path d="M ${midX} 2 C ${midX} ${svgHeight * 0.7}, ${cx} ${svgHeight * 0.3}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
     }
 
     container.innerHTML = `<svg class="connector-svg" width="${frameWidth}" height="${svgHeight}" viewBox="0 0 ${frameWidth} ${svgHeight}">${paths}</svg>`;
