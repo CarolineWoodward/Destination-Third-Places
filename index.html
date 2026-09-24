@@ -66,4 +66,162 @@
   .modal-branch.show { display:flex; }
   .connector-svg { display:block; }
   .branch-frames { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
-  .branch-frame { background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px
+  .branch-frame { background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px 40px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; cursor:default; }
+  .branch-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; pointer-events:none; }
+
+  .modal-close { position:fixed; top:20px; right:28px; background:none; border:none; color:#fff; font-size:2.2rem; line-height:1; cursor:pointer; z-index:101; }
+</style>
+</head>
+<body>
+
+<h1>Destination: Third Places</h1>
+<p class="subtitle">Third places aren't defined by what they sell — they're defined by how customers talk about them. This project identifies Orange County's third places by looking for a specific signal in public reviews and social posts: language about belonging, comfort, staff, and repeat presence, rather than just language about product quality.</p>
+
+<div class="grid">
+
+  <div class="entry" onclick="openModal(this)">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/1. Google Maps.png" alt="Orange County Arboretum"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Orange County Arboretum</div>
+      <div class="entry-text">Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables.</div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/1. Social Media.PNG" alt="Description">
+    </div>
+  </div>
+
+  <div class="entry" onclick="openModal(this)">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/2. The Rock Wall Pub & Grub.PNG" alt="The Rock Wall Pub & Grub"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">The Rock Wall Pub &amp; Grub</div>
+      <div class="entry-text">A local bar and restaurant with a variety of events meant to bring people together.</div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+  <button class="modal-close" onclick="closeModal()">&times;</button>
+  <div class="modal-box" id="modalBox">
+    <div class="modal-top-row">
+      <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
+      <div class="modal-note" id="modalNote"></div>
+    </div>
+    <div class="modal-branch" id="modalBranch">
+      <div id="connectorContainer"></div>
+      <div class="branch-frames" id="branchFrames"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const MODAL_NOTE_WIDTH = 300;
+  const MODAL_MIN_HEIGHT = 340;
+  const BRANCH_GAP = 24;
+
+  function sizeMainFrame(imgEl) {
+    const modalFrame = document.getElementById('modalFrame');
+    const maxFrameHeight = window.innerHeight * 0.6;
+    const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
+
+    let renderedHeight = Math.min(maxFrameHeight, imgEl.naturalHeight);
+    let renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+    if (renderedWidth > maxAllowedWidth) {
+      renderedWidth = maxAllowedWidth;
+      renderedHeight = (imgEl.naturalHeight / imgEl.naturalWidth) * renderedWidth;
+    }
+    if (renderedHeight < MODAL_MIN_HEIGHT) {
+      renderedHeight = MODAL_MIN_HEIGHT;
+      renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+      if (renderedWidth > maxAllowedWidth) renderedWidth = maxAllowedWidth;
+    }
+    modalFrame.style.width = renderedWidth + 'px';
+    modalFrame.style.height = renderedHeight + 'px';
+    return { width: renderedWidth, height: renderedHeight };
+  }
+
+  function buildBranchConnector(topRowWidth, branchCount, frameSize, accentColor) {
+    const container = document.getElementById('connectorContainer');
+    container.innerHTML = '';
+    if (branchCount < 1) return;
+
+    const svgHeight = 50;
+    const midX = topRowWidth / 2;
+    const rowWidth = branchCount * frameSize.width + (branchCount - 1) * BRANCH_GAP;
+    const startX = Math.max(midX - rowWidth / 2, 0);
+
+    let paths = `<circle cx="${midX}" cy="0" r="5" fill="${accentColor}" />`;
+    for (let i = 0; i < branchCount; i++) {
+      const cx = startX + i * (frameSize.width + BRANCH_GAP) + frameSize.width / 2;
+      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.65}, ${cx} ${svgHeight * 0.35}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
+      paths += `<circle cx="${cx}" cy="${svgHeight}" r="4" fill="${accentColor}" />`;
+    }
+
+    const svgWidth = Math.max(topRowWidth, rowWidth);
+    container.innerHTML = `<svg class="connector-svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">${paths}</svg>`;
+  }
+
+  function openModal(entryEl) {
+    const mainImg = entryEl.querySelector('.frame img');
+    const note = entryEl.querySelector('.caption').innerHTML;
+    const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
+    const modalImg = document.getElementById('modalImg');
+    const modalBranch = document.getElementById('modalBranch');
+    const branchFrames = document.getElementById('branchFrames');
+    const modalBox = document.getElementById('modalBox');
+
+    const accentColor = getComputedStyle(entryEl).getPropertyValue('--accent').trim();
+    modalBox.style.setProperty('--modal-accent', accentColor);
+
+    document.getElementById('modalNote').innerHTML = note;
+    document.getElementById('modalOverlay').classList.add('open');
+    branchFrames.innerHTML = '';
+
+    modalImg.onload = function () {
+      const frameSize = sizeMainFrame(modalImg);
+      const topRowWidth = frameSize.width + MODAL_NOTE_WIDTH;
+
+      if (extraImgs.length > 0) {
+        modalBranch.classList.add('show');
+        extraImgs.forEach(function (imgSource) {
+          const branchFrame = document.createElement('div');
+          branchFrame.className = 'branch-frame';
+          branchFrame.style.width = frameSize.width + 'px';
+          branchFrame.style.height = frameSize.height + 'px';
+          const img = document.createElement('img');
+          img.src = imgSource.src;
+          img.alt = imgSource.alt || '';
+          branchFrame.appendChild(img);
+          branchFrames.appendChild(branchFrame);
+        });
+        buildBranchConnector(topRowWidth, extraImgs.length, frameSize, accentColor);
+      } else {
+        modalBranch.classList.remove('show');
+      }
+    };
+    modalImg.src = mainImg.src;
+    modalImg.alt = mainImg.alt;
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeModalOnBackdrop(e) {
+    if (e.target.id === 'modalOverlay') closeModal();
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+</body>
+</html>
