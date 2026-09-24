@@ -40,8 +40,8 @@
 
   .tape { position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-4deg); width:64px; height:22px; background:var(--accent); opacity:0.85; box-shadow:0 2px 4px rgba(0,0,0,0.15); }
 
-  .frame { width:100%; height:210px; background:var(--accent); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  .frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .frame { width:100%; background:var(--accent); display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:160px; }
+  .frame img { width:100%; display:block; }
 
   .caption { margin-top:16px; }
   .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.6rem; color:#2b2b2b; margin-bottom:2px; }
@@ -173,8 +173,7 @@
 
   function openModal(entryEl) {
     const mainImg = entryEl.querySelector('.frame img');
-    const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
-    const textHTML = entryEl.querySelector('.entry-text').outerHTML;
+    const note = entryEl.querySelector('.caption').innerHTML;
     const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
     const modalImg = document.getElementById('modalImg');
     const modalBranch = document.getElementById('modalBranch');
@@ -184,5 +183,45 @@
     const accentColor = getComputedStyle(entryEl).getPropertyValue('--accent').trim();
     modalBox.style.setProperty('--modal-accent', accentColor);
 
-    document.getElementById('modalNote').innerHTML = titleHTML + textHTML;
+    document.getElementById('modalNote').innerHTML = note;
     document.getElementById('modalOverlay').classList.add('open');
+    branchFrames.innerHTML = '';
+
+    modalImg.onload = function () {
+      const frameSize = sizeMainFrame(modalImg);
+      const topRowWidth = frameSize.width + MODAL_NOTE_WIDTH;
+
+      if (extraImgs.length > 0) {
+        modalBranch.classList.add('show');
+        extraImgs.forEach(function (imgSource) {
+          const branchFrame = document.createElement('div');
+          branchFrame.className = 'branch-frame';
+          branchFrame.style.width = frameSize.width + 'px';
+          branchFrame.style.height = frameSize.height + 'px';
+          const img = document.createElement('img');
+          img.src = imgSource.src;
+          img.alt = imgSource.alt || '';
+          branchFrame.appendChild(img);
+          branchFrames.appendChild(branchFrame);
+        });
+        buildBranchConnector(topRowWidth, extraImgs.length, frameSize, accentColor);
+      } else {
+        modalBranch.classList.remove('show');
+      }
+    };
+    modalImg.src = mainImg.src;
+    modalImg.alt = mainImg.alt;
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeModalOnBackdrop(e) {
+    if (e.target.id === 'modalOverlay') closeModal();
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+</body>
+</html>
