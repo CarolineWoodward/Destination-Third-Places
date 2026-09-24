@@ -173,7 +173,8 @@
 
   function openModal(entryEl) {
     const mainImg = entryEl.querySelector('.frame img');
-    const note = entryEl.querySelector('.caption').innerHTML;
+    const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
+    const textHTML = entryEl.querySelector('.entry-text').outerHTML;
     const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
     const modalImg = document.getElementById('modalImg');
     const modalBranch = document.getElementById('modalBranch');
@@ -183,7 +184,7 @@
     const accentColor = getComputedStyle(entryEl).getPropertyValue('--accent').trim();
     modalBox.style.setProperty('--modal-accent', accentColor);
 
-    document.getElementById('modalNote').innerHTML = note;
+    document.getElementById('modalNote').innerHTML = titleHTML + textHTML;
     document.getElementById('modalOverlay').classList.add('open');
     branchFrames.innerHTML = '';
 
