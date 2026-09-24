@@ -2,186 +2,68 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Caroline Woodward — My Project</title>
+<title>Destination: Third Places</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono&display=swap');
   * { box-sizing: border-box; }
-  :root { --accent:#d98c3f; }
-  body { font-family: Georgia, serif; background:#f7f5f2; color:#2b2b2b; max-width:1100px; margin:0 auto; padding:40px 20px; }
-  h1 { font-weight:400; border-bottom:2px solid #2b2b2b; padding-bottom:10px; }
 
-  .row { display:flex; gap:24px; align-items:stretch; margin:50px 0; }
+  body {
+    font-family:'Poppins', sans-serif;
+    background-color:#faf6ef;
+    background-image: radial-gradient(#dcd5c7 1px, transparent 1px);
+    background-size: 22px 22px;
+    color:#3a3a3a;
+    max-width:1200px;
+    margin:0 auto;
+    padding:50px 30px 100px;
+  }
 
-  .entry { flex:1 1 0; min-width:0; margin:0; border-radius:8px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.12); background:#fff; display:flex; cursor:pointer; transition:transform 0.15s ease; }
-  .entry:hover { transform:translateY(-3px); }
+  h1 { font-family:'Caveat', cursive; font-weight:700; font-size:3rem; color:#2b2b2b; margin-bottom:6px; }
+  .subtitle { font-size:0.95rem; line-height:1.6; max-width:640px; color:#555; margin-bottom:50px; }
 
-  .frame { flex:1 1 0; min-width:0; height:280px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
-  .frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:60px 40px; }
 
-  .note { flex:0 0 200px; background:#2b2b2b; color:#fdf6e3; padding:16px 18px; font-size:0.95rem; line-height:1.5; border-left:6px solid var(--accent); display:flex; flex-direction:column; justify-content:center; gap:8px; }
-  .entry-title { font-weight:700; font-size:1.05rem; margin:0; }
+  .entry { cursor:pointer; }
+
+  .entry:nth-child(6n+1) { --accent:#c17b5e; }
+  .entry:nth-child(6n+2) { --accent:#6b8ca8; }
+  .entry:nth-child(6n+3) { --accent:#d9a441; }
+  .entry:nth-child(6n+4) { --accent:#8a9a7e; }
+  .entry:nth-child(6n+5) { --accent:#c98b7f; }
+  .entry:nth-child(6n+6) { --accent:#5c8a89; }
+
+  .entry:nth-child(odd) .polaroid { --rot:-3deg; }
+  .entry:nth-child(even) .polaroid { --rot:2.5deg; }
+
+  .polaroid { position:relative; background:#fff; padding:12px 12px 34px; box-shadow:0 10px 22px rgba(0,0,0,0.15); transform:rotate(var(--rot,-2deg)); transition:transform 0.2s ease, box-shadow 0.2s ease; }
+  .entry:hover .polaroid { transform:rotate(0deg) scale(1.03); box-shadow:0 14px 28px rgba(0,0,0,0.2); }
+
+  .tape { position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-4deg); width:64px; height:22px; background:var(--accent); opacity:0.85; box-shadow:0 2px 4px rgba(0,0,0,0.15); }
+
+  .frame { width:100%; background:var(--accent); display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:160px; }
+  .frame img { width:100%; display:block; }
+
+  .caption { margin-top:16px; }
+  .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.6rem; color:#2b2b2b; margin-bottom:2px; }
+  .entry-text { font-size:0.85rem; line-height:1.5; color:#555; }
+  .entry-hint { font-family:'Space Mono', monospace; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; color:var(--accent); margin-top:8px; font-weight:700; }
 
   .gallery { display:none; }
 
   /* Modal pop-up */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:100; padding:30px; overflow-y:auto; }  .modal-overlay.open { display:flex; }
-  .modal-box { background:transparent; width:auto; max-width:90vw; display:flex; flex-direction:column; align-items:center; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,26,20,0.8); align-items:flex-start; justify-content:center; z-index:100; padding:40px 30px; overflow-y:auto; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { width:auto; max-width:90vw; display:flex; flex-direction:column; align-items:center; }
 
-  .modal-top-row { background:#fff; border-radius:8px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
-  .modal-frame { background:var(--accent); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
+  .modal-top-row { background:#fff; border-radius:4px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 16px 40px rgba(0,0,0,0.35); }
+  .modal-frame { background:var(--modal-accent, #d98c3f); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .modal-note { flex:0 0 300px; min-height:0; background:#2b2b2b; color:#fdf6e3; padding:24px 28px; font-size:1.05rem; line-height:1.6; border-left:6px solid var(--accent); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
-  .modal-note .entry-title { font-size:1.25rem; margin-bottom:10px; }
+  .modal-note { flex:0 0 300px; min-height:0; background:#2b2b2b; color:#fdf6e3; padding:26px 28px; font-size:1rem; line-height:1.6; border-left:6px solid var(--modal-accent, #d98c3f); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
+  .modal-note .entry-title { font-size:1.4rem; color:#fdf6e3; margin-bottom:10px; }
+  .modal-note .entry-text { color:#fdf6e3; font-size:1rem; }
 
-  /* Branch: full-size extra photos, sitting apart from the orange/black pairing. NOT clickable — display only. */
   .modal-branch { display:none; flex-direction:column; align-items:center; }
   .modal-branch.show { display:flex; }
   .connector-svg { display:block; }
   .branch-frames { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
-  .branch-frame { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; cursor:default; }
-  .branch-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; pointer-events:none; }
-
-  .modal-close { position:fixed; top:16px; right:24px; background:none; border:none; color:#fff; font-size:2rem; line-height:1; cursor:pointer; z-index:101; }
-</style>
-</head>
-<body>
-
-<h1>Destination: Third Places</h1>
-<p>Third places aren't defined by what they sell — they're defined by how customers talk about them. This project identifies Orange County's third places by looking for a specific signal in public reviews and social posts: language about belonging, comfort, staff, and repeat presence, rather than just language about product quality.</p>
-
-<div class="row">
-
-  <div class="entry" onclick="openModal(this)">
-    <div class="frame"><img src="images/1. Google Maps.png" alt="Orange County Arboretum"></div>
-    <div class="note">
-      <div class="entry-title">Orange County Arboretum</div>
-      <div>Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables.</div>
-    </div>
-    <div class="gallery">
-      <img src="images/1. Social Media.PNG" alt="Description">
-    </div>
-  </div>
-
-  <div class="entry" onclick="openModal(this)">
-    <div class="frame"><img src="images/2. The Rock Wall Pub & Grub.PNG" alt="The Rock Wall Pub & Grub"></div>
-    <div class="note">
-      <div class="entry-title">The Rock Wall Pub & Grub</div>
-      <div>A local bar and restaurant with a variety of events meant to bring people together.</div>
-    </div>
-    <div class="gallery">
-    </div>
-  </div>
-
-</div>
-
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
-  <button class="modal-close" onclick="closeModal()">&times;</button>
-  <div class="modal-box" id="modalBox">
-    <div class="modal-top-row">
-      <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
-      <div class="modal-note" id="modalNote"></div>
-    </div>
-    <div class="modal-branch" id="modalBranch">
-      <div id="connectorContainer"></div>
-      <div class="branch-frames" id="branchFrames"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-  const MODAL_NOTE_WIDTH = 300;
-  const MODAL_MIN_HEIGHT = 340;
-  const BRANCH_GAP = 24;
-
-  function sizeMainFrame(imgEl) {
-    const modalFrame = document.getElementById('modalFrame');
-    const maxFrameHeight = window.innerHeight * 0.6;
-    const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
-
-    let renderedHeight = Math.min(maxFrameHeight, imgEl.naturalHeight);
-    let renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
-    if (renderedWidth > maxAllowedWidth) {
-      renderedWidth = maxAllowedWidth;
-      renderedHeight = (imgEl.naturalHeight / imgEl.naturalWidth) * renderedWidth;
-    }
-    if (renderedHeight < MODAL_MIN_HEIGHT) {
-      renderedHeight = MODAL_MIN_HEIGHT;
-      renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
-      if (renderedWidth > maxAllowedWidth) renderedWidth = maxAllowedWidth;
-    }
-    modalFrame.style.width = renderedWidth + 'px';
-    modalFrame.style.height = renderedHeight + 'px';
-    return { width: renderedWidth, height: renderedHeight };
-  }
-
-  function buildBranchConnector(topRowWidth, branchCount, frameSize) {
-    const container = document.getElementById('connectorContainer');
-    container.innerHTML = '';
-    if (branchCount < 1) return;
-
-    const accentColor = '#d98c3f';
-    const svgHeight = 50;
-    const midX = topRowWidth / 2;
-    const rowWidth = branchCount * frameSize.width + (branchCount - 1) * BRANCH_GAP;
-    const startX = Math.max(midX - rowWidth / 2, 0);
-
-    let paths = `<circle cx="${midX}" cy="0" r="5" fill="${accentColor}" />`;
-    for (let i = 0; i < branchCount; i++) {
-      const cx = startX + i * (frameSize.width + BRANCH_GAP) + frameSize.width / 2;
-      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.65}, ${cx} ${svgHeight * 0.35}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
-      paths += `<circle cx="${cx}" cy="${svgHeight}" r="4" fill="${accentColor}" />`;
-    }
-
-    const svgWidth = Math.max(topRowWidth, rowWidth);
-    container.innerHTML = `<svg class="connector-svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">${paths}</svg>`;
-  }
-
-  function openModal(entryEl) {
-    const mainImg = entryEl.querySelector('.frame img');
-    const note = entryEl.querySelector('.note').innerHTML;
-    const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
-    const modalImg = document.getElementById('modalImg');
-    const modalBranch = document.getElementById('modalBranch');
-    const branchFrames = document.getElementById('branchFrames');
-
-    document.getElementById('modalNote').innerHTML = note;
-    document.getElementById('modalOverlay').classList.add('open');
-    branchFrames.innerHTML = '';
-
-    modalImg.onload = function () {
-      const frameSize = sizeMainFrame(modalImg);
-      const topRowWidth = frameSize.width + MODAL_NOTE_WIDTH;
-
-      if (extraImgs.length > 0) {
-        modalBranch.classList.add('show');
-        extraImgs.forEach(function (imgSource) {
-          const branchFrame = document.createElement('div');
-          branchFrame.className = 'branch-frame';
-          branchFrame.style.width = frameSize.width + 'px';
-          branchFrame.style.height = frameSize.height + 'px';
-          const img = document.createElement('img');
-          img.src = imgSource.src;
-          img.alt = imgSource.alt || '';
-          branchFrame.appendChild(img);
-          branchFrames.appendChild(branchFrame);
-        });
-        buildBranchConnector(topRowWidth, extraImgs.length, frameSize);
-      } else {
-        modalBranch.classList.remove('show');
-      }
-    };
-    modalImg.src = mainImg.src;
-    modalImg.alt = mainImg.alt;
-  }
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-  function closeModalOnBackdrop(e) {
-    if (e.target.id === 'modalOverlay') closeModal();
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
-  });
-</script>
-
-</body>
-</html>
+  .branch-frame { background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px
