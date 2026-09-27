@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Destination: Third Places</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
   * { box-sizing: border-box; }
 
   body {
@@ -24,11 +24,11 @@
   /* Filter bar */
   .filter-bar { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:50px; align-items:center; }
   .filter-label { font-family:'Space Mono', monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-right:4px; }
-  .filter-tag { cursor:pointer; font-family:'Space Mono', monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; padding:7px 16px; color:#2b2b2b; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.15); transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; opacity:0.8; }
+  .filter-tag { cursor:pointer; font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:7px 16px; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.15); transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; opacity:0.8; border-radius:2px; }
   .filter-tag:hover { opacity:1; transform:translateY(-2px); }
   .filter-tag.active { opacity:1; outline:2px solid #2b2b2b; outline-offset:2px; transform:translateY(-2px); box-shadow:0 5px 10px rgba(0,0,0,0.2); }
 
-  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:60px 40px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:70px 40px; }
 
   .entry { cursor:pointer; }
   .entry.hidden { display:none; }
@@ -51,14 +51,28 @@
   .frame { width:100%; background:var(--accent); display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:160px; }
   .frame img { width:100%; display:block; }
 
+  /* Tape tags in the corner of the photo */
+  .tag-corner { position:absolute; top:4px; left:-10px; display:flex; flex-direction:column; gap:6px; z-index:5; }
+  .tag-strip {
+    padding:5px 12px;
+    font-family:'Space Mono', monospace;
+    font-size:0.68rem;
+    font-weight:700;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+    white-space:nowrap;
+    border-radius:1px;
+    box-shadow:0 3px 6px rgba(0,0,0,0.35);
+  }
+
   .caption { margin-top:16px; }
   .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.6rem; color:#2b2b2b; margin-bottom:2px; }
   .entry-text { font-size:0.85rem; line-height:1.5; color:#555; }
   .entry-hint { font-family:'Space Mono', monospace; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; color:var(--accent); margin-top:8px; font-weight:700; }
 
-  /* Tags on each card, styled as small washi tape strips */
-  .tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-  .tag-chip { font-family:'Space Mono', monospace; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.3px; padding:4px 10px; color:#2b2b2b; box-shadow:0 2px 4px rgba(0,0,0,0.12); display:inline-block; }
+  /* Original inline tag chips are kept in the DOM (as the data source for
+     filtering) but hidden from view now that tags render on the photo corner */
+  .tags { display:none; }
 
   .gallery { display:none; }
 
@@ -159,30 +173,97 @@ A local bar and restaurant with a variety of events meant to bring people togeth
   const MODAL_MIN_HEIGHT = 340;
   const BRANCH_GAP = 24;
 
-  // ---- Tag color system: same tag text always produces the same color + tilt ----
-  const TAG_PALETTE = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89', '#a3684f', '#7d6b9e'];
-  const TAG_ROTATIONS = [-3, 2, -1.5, 3, -2.5, 1.5];
+  // ---- Tag style system ----
+  // Same tag text always produces the same color + pattern + tilt, but the
+  // combination of pattern and color gives far more visual variety than a
+  // single repeating-stripe look.
+  const TAG_COLORS = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89', '#a3684f', '#7d6b9e', '#b5566b', '#4f6d5c'];
+  const TAG_ROTATIONS = [-7, -5, -3, 3, 5, 7];
 
-  function hashText(text) {
+  // Six distinct washi-tape patterns; each takes a base color and a lighter
+  // accent derived from it.
+  const TAG_PATTERNS = [
+    (c, light) => `background-color:${c};`,
+    (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`,
+    (c, light) => `background-color:${c}; background-image: radial-gradient(${light} 1.8px, transparent 1.8px); background-size:9px 9px;`,
+    (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(-45deg, transparent, transparent 4px, ${light} 4px, ${light} 8px);`,
+    (c, light) => `background-color:${c}; background-image: linear-gradient(90deg, ${light} 1px, transparent 1px), linear-gradient(0deg, ${light} 1px, transparent 1px); background-size:8px 8px;`,
+    (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(0deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`
+  ];
+
+  function hashText(text, salt) {
     let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = (hash * 31 + text.charCodeAt(i)) % 100000;
+    const s = salt + text;
+    for (let i = 0; i < s.length; i++) {
+      hash = (hash * 31 + s.charCodeAt(i)) % 100000;
     }
-    return hash;
+    return Math.abs(hash);
   }
-  function styleTagElement(el, tagText) {
-    const h = hashText(tagText.trim().toLowerCase());
-    const color = TAG_PALETTE[h % TAG_PALETTE.length];
-    const rot = TAG_ROTATIONS[h % TAG_ROTATIONS.length];
-    el.style.backgroundImage = `repeating-linear-gradient(45deg, ${color}, ${color} 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 16px)`;
-    el.style.transform = `rotate(${rot}deg)`;
+
+  function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    return {
+      r: parseInt(h.substring(0, 2), 16),
+      g: parseInt(h.substring(2, 4), 16),
+      b: parseInt(h.substring(4, 6), 16)
+    };
+  }
+
+  function lighten(hex, amount) {
+    const { r, g, b } = hexToRgb(hex);
+    const mix = (channel) => Math.round(channel + (255 - channel) * amount);
+    return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  }
+
+  // Picks readable text color + a matching shadow so the label stays legible
+  // regardless of how busy or dark the tape pattern underneath is.
+  function getTextStyle(hex) {
+    const { r, g, b } = hexToRgb(hex);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    if (luminance > 0.58) {
+      return { color: '#2b2116', shadow: '0 1px 0 rgba(255,255,255,0.35)' };
+    }
+    return { color: '#fdf6e3', shadow: '0 1px 2px rgba(0,0,0,0.45)' };
+  }
+
+  function applyTagStyle(el, tagText, includeRotation) {
+    const colorIndex = hashText(tagText.trim().toLowerCase(), 'color') % TAG_COLORS.length;
+    const patternIndex = hashText(tagText.trim().toLowerCase(), 'pattern') % TAG_PATTERNS.length;
+    const rotIndex = hashText(tagText.trim().toLowerCase(), 'rotation') % TAG_ROTATIONS.length;
+
+    const color = TAG_COLORS[colorIndex];
+    const light = lighten(color, 0.4);
+    const textStyle = getTextStyle(color);
+
+    el.style.cssText += TAG_PATTERNS[patternIndex](color, light);
+    el.style.color = textStyle.color;
+    el.style.textShadow = textStyle.shadow;
+    if (includeRotation) {
+      el.style.transform = `rotate(${TAG_ROTATIONS[rotIndex]}deg)`;
+    }
   }
 
   function initTagsAndFilters() {
-    document.querySelectorAll('.tag-chip').forEach(chip => {
-      styleTagElement(chip, chip.textContent);
+    // Build corner tape tags on each photo, reading from the hidden
+    // .tag-chip data source inside each entry's caption.
+    document.querySelectorAll('.entry').forEach(entry => {
+      const polaroid = entry.querySelector('.polaroid');
+      const chips = Array.from(entry.querySelectorAll('.tag-chip'));
+      if (chips.length === 0) return;
+
+      const tagCorner = document.createElement('div');
+      tagCorner.className = 'tag-corner';
+      chips.forEach(chip => {
+        const strip = document.createElement('div');
+        strip.className = 'tag-strip';
+        strip.textContent = chip.textContent.trim();
+        applyTagStyle(strip, chip.textContent, true);
+        tagCorner.appendChild(strip);
+      });
+      polaroid.appendChild(tagCorner);
     });
 
+    // Build filter buttons from the same tag data.
     const allTags = new Set();
     document.querySelectorAll('.tag-chip').forEach(chip => allTags.add(chip.textContent.trim()));
 
@@ -193,7 +274,7 @@ A local bar and restaurant with a variety of events meant to bring people togeth
       const btn = document.createElement('button');
       btn.className = 'filter-tag';
       btn.textContent = tagText;
-      styleTagElement(btn, tagText);
+      applyTagStyle(btn, tagText, false);
       btn.onclick = function () {
         if (activeTags.has(tagText)) {
           activeTags.delete(tagText);
