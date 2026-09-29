@@ -94,8 +94,8 @@
   .modal-branch { display:none; margin-top:28px; }
   .modal-branch.show { display:flex; }
   .branch-frames { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
-  .branch-frame { position:relative; background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px 40px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; cursor:default; }
-  .branch-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; pointer-events:none; }
+  .branch-frame { position:relative; display:inline-block; cursor:default; }
+  .branch-frame img { display:block; max-width:260px; max-height:320px; width:auto; height:auto; border-radius:4px; box-shadow:0 16px 40px rgba(0,0,0,0.35); }
   .branch-frame:nth-child(odd) { transform: rotate(-2deg); }
   .branch-frame:nth-child(even) { transform: rotate(1.5deg); }
 
@@ -387,8 +387,6 @@ A local bar and restaurant with a variety of events meant to bring people togeth
         extraImgs.forEach(function (imgSource) {
           const branchFrame = document.createElement('div');
           branchFrame.className = 'branch-frame';
-          branchFrame.style.width = frameSize.width + 'px';
-          branchFrame.style.height = frameSize.height + 'px';
           const img = document.createElement('img');
           img.src = imgSource.src;
           img.alt = imgSource.alt || '';
