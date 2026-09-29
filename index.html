@@ -91,22 +91,23 @@
   .modal-note .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.4rem; color:#2b2b2b; margin-bottom:10px; }
   .modal-note .entry-text { color:#555; font-size:1rem; }
 
-  .modal-branch { display:none; flex-direction:column; align-items:center; }
+  .modal-branch { display:none; margin-top:28px; }
   .modal-branch.show { display:flex; }
-  .connector-svg { display:block; }
-  .branch-frames { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
-  .branch-frame { background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px 40px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; cursor:default; }
+  .branch-frames { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
+  .branch-frame { position:relative; background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px 40px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; cursor:default; }
   .branch-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; pointer-events:none; }
   .branch-frame:nth-child(odd) { transform: rotate(-2deg); }
   .branch-frame:nth-child(even) { transform: rotate(1.5deg); }
 
-  .modal-quote-branch { display:none; flex-direction:column; align-items:center; margin-top:10px; }
+  .modal-quote-branch { display:none; margin-top:24px; }
   .modal-quote-branch.show { display:flex; }
-  .quote-cards { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; max-width:min(640px, 80vw); }
-  .quote-card { max-width:210px; padding:16px 18px; border-radius:2px; border:2px solid; box-shadow:0 10px 22px rgba(0,0,0,0.3); font-size:0.85rem; line-height:1.5; font-style:italic; color:#2b2b2b; }
+  .quote-cards { display:flex; gap:26px; flex-wrap:wrap; justify-content:center; max-width:min(640px, 80vw); }
+  .quote-card { position:relative; max-width:210px; padding:18px 18px 16px; border-radius:2px; border:2px solid; box-shadow:0 10px 22px rgba(0,0,0,0.3); font-size:0.85rem; line-height:1.5; font-style:italic; color:#2b2b2b; }
   .quote-card:nth-child(odd) { transform: rotate(-2.5deg); }
   .quote-card:nth-child(even) { transform: rotate(2deg); }
   .quote-source { display:block; margin-top:8px; font-family:'Space Mono', monospace; font-style:normal; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.4px; opacity:0.7; }
+
+  .pushpin { position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:15px; height:15px; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.5), inset -2px -2px 3px rgba(0,0,0,0.35), inset 2px 2px 3px rgba(255,255,255,0.5); z-index:6; }
 
   .modal-close { position:fixed; top:20px; right:28px; background:none; border:none; color:#fff; font-size:2.2rem; line-height:1; cursor:pointer; z-index:101; }
 </style>
@@ -184,11 +185,9 @@ A local bar and restaurant with a variety of events meant to bring people togeth
       <div class="modal-note" id="modalNote"></div>
     </div>
     <div class="modal-branch" id="modalBranch">
-      <div id="connectorContainer"></div>
       <div class="branch-frames" id="branchFrames"></div>
     </div>
     <div class="modal-quote-branch" id="modalQuoteBranch">
-      <div id="quoteConnectorContainer"></div>
       <div class="quote-cards" id="quoteCards"></div>
     </div>
   </div>
@@ -239,6 +238,19 @@ A local bar and restaurant with a variety of events meant to bring people togeth
     const { r, g, b } = hexToRgb(hex);
     const mix = (channel) => Math.round(channel + (255 - channel) * amount);
     return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  }
+
+  function darken(hex, amount) {
+    const { r, g, b } = hexToRgb(hex);
+    const mix = (channel) => Math.round(channel * (1 - amount));
+    return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  }
+
+  function makePushpin(accentColor) {
+    const pin = document.createElement('div');
+    pin.className = 'pushpin';
+    pin.style.backgroundImage = `radial-gradient(circle at 35% 35%, ${lighten(accentColor, 0.55)}, ${accentColor} 55%, ${darken(accentColor, 0.3)} 100%)`;
+    return pin;
   }
 
   // Picks readable text color + a matching shadow so the label stays legible
@@ -346,49 +358,6 @@ A local bar and restaurant with a variety of events meant to bring people togeth
     return { width: renderedWidth, height: renderedHeight };
   }
 
-  function buildBranchConnector(topRowWidth, branchCount, frameSize, accentColor) {
-    const container = document.getElementById('connectorContainer');
-    container.innerHTML = '';
-    if (branchCount < 1) return;
-
-    const svgHeight = 50;
-    const midX = topRowWidth / 2;
-    const rowWidth = branchCount * frameSize.width + (branchCount - 1) * BRANCH_GAP;
-    const startX = Math.max(midX - rowWidth / 2, 0);
-
-    let paths = `<circle cx="${midX}" cy="0" r="5" fill="${accentColor}" />`;
-    for (let i = 0; i < branchCount; i++) {
-      const cx = startX + i * (frameSize.width + BRANCH_GAP) + frameSize.width / 2;
-      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.65}, ${cx} ${svgHeight * 0.35}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
-      paths += `<circle cx="${cx}" cy="${svgHeight}" r="4" fill="${accentColor}" />`;
-    }
-
-    const svgWidth = Math.max(topRowWidth, rowWidth);
-    container.innerHTML = `<svg class="connector-svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">${paths}</svg>`;
-  }
-
-  function buildQuoteConnector(topRowWidth, quoteCardsEl, accentColor) {
-    const container = document.getElementById('quoteConnectorContainer');
-    container.innerHTML = '';
-    const cards = Array.from(quoteCardsEl.children);
-    if (cards.length === 0) return;
-
-    const svgHeight = 50;
-    const rowWidth = quoteCardsEl.offsetWidth;
-    const svgWidth = Math.max(topRowWidth, rowWidth);
-    const shift = (svgWidth - rowWidth) / 2;
-    const midX = svgWidth / 2;
-
-    let paths = `<circle cx="${midX}" cy="0" r="5" fill="${accentColor}" />`;
-    cards.forEach(function (card) {
-      const cx = shift + card.offsetLeft + card.offsetWidth / 2;
-      paths += `<path d="M ${midX} 0 C ${midX} ${svgHeight * 0.65}, ${cx} ${svgHeight * 0.35}, ${cx} ${svgHeight}" stroke="${accentColor}" stroke-width="2.5" fill="none" />`;
-      paths += `<circle cx="${cx}" cy="${svgHeight}" r="4" fill="${accentColor}" />`;
-    });
-
-    container.innerHTML = `<svg class="connector-svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">${paths}</svg>`;
-  }
-
   function openModal(entryEl) {
     const mainImg = entryEl.querySelector('.frame img');
     const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
@@ -412,7 +381,6 @@ A local bar and restaurant with a variety of events meant to bring people togeth
 
     modalImg.onload = function () {
       const frameSize = sizeMainFrame(modalImg);
-      const topRowWidth = frameSize.width + MODAL_NOTE_WIDTH;
 
       if (extraImgs.length > 0) {
         modalBranch.classList.add('show');
@@ -425,9 +393,9 @@ A local bar and restaurant with a variety of events meant to bring people togeth
           img.src = imgSource.src;
           img.alt = imgSource.alt || '';
           branchFrame.appendChild(img);
+          branchFrame.appendChild(makePushpin(accentColor));
           branchFrames.appendChild(branchFrame);
         });
-        buildBranchConnector(topRowWidth, extraImgs.length, frameSize, accentColor);
       } else {
         modalBranch.classList.remove('show');
       }
@@ -441,9 +409,9 @@ A local bar and restaurant with a variety of events meant to bring people togeth
           card.innerHTML = quoteEl.innerHTML;
           card.style.background = tint;
           card.style.borderColor = accentColor;
+          card.appendChild(makePushpin(accentColor));
           quoteCards.appendChild(card);
         });
-        buildQuoteConnector(topRowWidth, quoteCards, accentColor);
       } else {
         modalQuoteBranch.classList.remove('show');
       }
