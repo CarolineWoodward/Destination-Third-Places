@@ -77,16 +77,18 @@
   .gallery { display:none; }
 
   /* Modal pop-up */
-  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,26,20,0.8); align-items:flex-start; justify-content:center; z-index:100; padding:40px 30px; overflow-y:auto; }
+    .modal-overlay { display:none; position:fixed; inset:0; background-color:#231f1a; background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px); background-size:22px 22px; align-items:flex-start; justify-content:center; z-index:100; padding:40px 30px; overflow-y:auto; }
   .modal-overlay.open { display:flex; }
-  .modal-box { width:auto; max-width:90vw; display:flex; flex-direction:column; align-items:center; }
+  .modal-box { width:auto; max-width:90vw; display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px 20px 26px; border-radius:3px; box-shadow:0 20px 50px rgba(0,0,0,0.45); transform:rotate(-1deg); position:relative; }
 
-  .modal-top-row { background:#fff; border-radius:4px; overflow:hidden; display:flex; flex-direction:row; align-items:stretch; box-shadow:0 16px 40px rgba(0,0,0,0.35); }
+  .modal-tape { position:absolute; top:-14px; left:50%; transform:translateX(-50%) rotate(-3deg); width:80px; height:26px; background:var(--modal-accent, #d98c3f); opacity:0.85; box-shadow:0 2px 4px rgba(0,0,0,0.2); }
+
+  .modal-top-row { display:flex; flex-direction:row; align-items:stretch; }
   .modal-frame { background:var(--modal-accent, #d98c3f); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
   .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .modal-note { flex:0 0 300px; min-height:0; background:#2b2b2b; color:#fdf6e3; padding:26px 28px; font-size:1rem; line-height:1.6; border-left:6px solid var(--modal-accent, #d98c3f); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
-  .modal-note .entry-title { font-size:1.4rem; color:#fdf6e3; margin-bottom:10px; }
-  .modal-note .entry-text { color:#fdf6e3; font-size:1rem; }
+  .modal-note { flex:0 0 300px; min-height:0; background:#fdf8ee; color:#3a3a3a; padding:26px 28px; font-size:1rem; line-height:1.6; border-left:6px solid var(--modal-accent, #d98c3f); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
+  .modal-note .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.4rem; color:#2b2b2b; margin-bottom:10px; }
+  .modal-note .entry-text { color:#555; font-size:1rem; }
 
   .modal-branch { display:none; flex-direction:column; align-items:center; }
   .modal-branch.show { display:flex; }
@@ -94,7 +96,9 @@
   .branch-frames { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
   .branch-frame { background:#fff; border-radius:4px; overflow:hidden; box-shadow:0 16px 40px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; cursor:default; }
   .branch-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; pointer-events:none; }
-
+  .branch-frame:nth-child(odd) { transform: rotate(-2deg); }
+  .branch-frame:nth-child(even) { transform: rotate(1.5deg); }
+  
   .modal-close { position:fixed; top:20px; right:28px; background:none; border:none; color:#fff; font-size:2.2rem; line-height:1; cursor:pointer; z-index:101; }
 </style>
 </head>
@@ -156,7 +160,8 @@ A local bar and restaurant with a variety of events meant to bring people togeth
 
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
   <button class="modal-close" onclick="closeModal()">&times;</button>
-  <div class="modal-box" id="modalBox">
+   <div class="modal-box" id="modalBox">
+    <div class="modal-tape"></div>
     <div class="modal-top-row">
       <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
       <div class="modal-note" id="modalNote"></div>
