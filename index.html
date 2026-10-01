@@ -5,111 +5,449 @@
 <title>Destination: Third Places</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
-  * { box-sizing: border-box; }
+
+  * {
+    box-sizing: border-box;
+  }
 
   body {
-    font-family:'Poppins', sans-serif;
-    background-color:#faf6ef;
+    font-family: 'Poppins', sans-serif;
+    background-color: #faf6ef;
     background-image: radial-gradient(#dcd5c7 1px, transparent 1px);
     background-size: 22px 22px;
-    color:#3a3a3a;
-    max-width:1200px;
-    margin:0 auto;
-    padding:50px 30px 100px;
+    color: #3a3a3a;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 50px 30px 100px;
   }
 
-  h1 { font-family:'Caveat', cursive; font-weight:700; font-size:3rem; color:#2b2b2b; margin-bottom:6px; }
-  .subtitle { font-size:0.95rem; line-height:1.6; max-width:640px; color:#555; margin-bottom:36px; }
+  h1 {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 3rem;
+    color: #2b2b2b;
+    margin-bottom: 6px;
+  }
 
-  /* Filter bar */
-  .filter-bar { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:50px; align-items:center; }
-  .filter-label { font-family:'Space Mono', monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-right:4px; }
-  .filter-tag { cursor:pointer; font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:7px 16px; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.15); transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; opacity:0.8; border-radius:2px; }
-  .filter-tag:hover { opacity:1; transform:translateY(-2px); }
-  .filter-tag.active { opacity:1; outline:2px solid #2b2b2b; outline-offset:2px; transform:translateY(-2px); box-shadow:0 5px 10px rgba(0,0,0,0.2); }
+  .subtitle {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 640px;
+    color: #555;
+    margin-bottom: 36px;
+  }
 
-  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:70px 40px; }
+  /* ---------------------------------------------------------------- */
+  /* Filter bar                                                        */
+  /* ---------------------------------------------------------------- */
 
-  .entry { cursor:pointer; }
-  .entry.hidden { display:none; }
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 50px;
+    align-items: center;
+  }
 
-  .entry:nth-child(6n+1) { --accent:#c17b5e; }
-  .entry:nth-child(6n+2) { --accent:#6b8ca8; }
-  .entry:nth-child(6n+3) { --accent:#d9a441; }
-  .entry:nth-child(6n+4) { --accent:#8a9a7e; }
-  .entry:nth-child(6n+5) { --accent:#c98b7f; }
-  .entry:nth-child(6n+6) { --accent:#5c8a89; }
+  .filter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    margin-right: 4px;
+  }
 
-  .entry:nth-child(odd) .polaroid { --rot:-3deg; }
-  .entry:nth-child(even) .polaroid { --rot:2.5deg; }
+  .filter-tag {
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 7px 16px;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    opacity: 0.8;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  }
 
-  .polaroid { position:relative; background:#fff; padding:12px 12px 34px; box-shadow:0 10px 22px rgba(0,0,0,0.15); transform:rotate(var(--rot,-2deg)); transition:transform 0.2s ease, box-shadow 0.2s ease; }
-  .entry:hover .polaroid { transform:rotate(0deg) scale(1.03); box-shadow:0 14px 28px rgba(0,0,0,0.2); }
+  .filter-tag:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
 
-  .tape { position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-4deg); width:64px; height:22px; background:var(--accent); opacity:0.85; box-shadow:0 2px 4px rgba(0,0,0,0.15); }
+  .filter-tag.active {
+    opacity: 1;
+    outline: 2px solid #2b2b2b;
+    outline-offset: 2px;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  }
 
-  .frame { width:100%; background:var(--accent); display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:160px; }
-  .frame img { width:100%; display:block; }
+  /* ---------------------------------------------------------------- */
+  /* Entry grid + polaroid cards                                       */
+  /* ---------------------------------------------------------------- */
 
-  /* Tape tags in the corner of the photo */
-  .tag-corner { position:absolute; bottom:30px; right:-10px; display:flex; flex-direction:column-reverse; align-items:flex-end; gap:6px; z-index:5; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 70px 40px;
+  }
+
+  .entry {
+    cursor: pointer;
+  }
+
+  .entry.hidden {
+    display: none;
+  }
+
+  /* Accent color cycles every 6 entries */
+  .entry:nth-child(6n+1) { --accent: #c17b5e; }
+  .entry:nth-child(6n+2) { --accent: #6b8ca8; }
+  .entry:nth-child(6n+3) { --accent: #d9a441; }
+  .entry:nth-child(6n+4) { --accent: #8a9a7e; }
+  .entry:nth-child(6n+5) { --accent: #c98b7f; }
+  .entry:nth-child(6n+6) { --accent: #5c8a89; }
+
+  /* Alternating tilt */
+  .entry:nth-child(odd) .polaroid { --rot: -3deg; }
+  .entry:nth-child(even) .polaroid { --rot: 2.5deg; }
+
+  .polaroid {
+    position: relative;
+    background: #fff;
+    padding: 12px 12px 34px;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
+    transform: rotate(var(--rot, -2deg));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .entry:hover .polaroid {
+    transform: rotate(0deg) scale(1.03);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  }
+
+  .tape {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-4deg);
+    width: 64px;
+    height: 22px;
+    background: var(--accent);
+    opacity: 0.85;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  .frame {
+    width: 100%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 160px;
+  }
+
+  .frame img {
+    width: 100%;
+    display: block;
+  }
+
+  /* Tape tags, bottom-right corner of the photo */
+  .tag-corner {
+    position: absolute;
+    bottom: 30px;
+    right: -10px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 6px;
+    z-index: 5;
+  }
+
   .tag-strip {
-    padding:5px 12px;
-    font-family:'Space Mono', monospace;
-    font-size:0.68rem;
-    font-weight:700;
-    letter-spacing:0.4px;
-    text-transform:uppercase;
-    white-space:nowrap;
-    border-radius:1px;
-    box-shadow:0 3px 6px rgba(0,0,0,0.35);
+    padding: 5px 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-radius: 1px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
   }
 
-  .caption { margin-top:16px; }
-  .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.6rem; color:#2b2b2b; margin-bottom:2px; }
-  .entry-text { font-size:0.85rem; line-height:1.5; color:#555; }
-  .entry-hint { font-family:'Space Mono', monospace; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; color:var(--accent); margin-top:8px; font-weight:700; }
+  /* ---------------------------------------------------------------- */
+  /* Caption text                                                      */
+  /* ---------------------------------------------------------------- */
 
-  /* Original inline tag chips are kept in the DOM (as the data source for
-     filtering) but hidden from view now that tags render on the photo corner */
-  .tags { display:none; }
+  .caption {
+    margin-top: 16px;
+  }
 
-  .gallery { display:none; }
-  .quotes { display:none; }
+  .entry-title {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: #2b2b2b;
+    margin-bottom: 2px;
+  }
 
-  /* Modal pop-up */
-  .modal-overlay { display:none; position:fixed; inset:0; background-color: color-mix(in srgb, var(--modal-accent, #d98c3f) 14%, #faf6ef); background-image: radial-gradient(color-mix(in srgb, var(--modal-accent, #d98c3f) 45%, #dcd5c7) 1px, transparent 1px); background-size: 22px 22px; align-items:flex-start; justify-content:center; z-index:100; padding:40px 30px; overflow-y:auto; }
-  .modal-overlay.open { display:flex; }
-  .modal-box { width:auto; max-width:90vw; display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px 20px 26px; border-radius:3px; box-shadow:0 20px 50px rgba(0,0,0,0.45); transform:rotate(-1deg); position:relative; }
+  .entry-location {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
 
-  .modal-tape { position:absolute; top:-14px; left:50%; transform:translateX(-50%) rotate(-3deg); width:80px; height:26px; background:var(--modal-accent, #d98c3f); opacity:0.85; box-shadow:0 2px 4px rgba(0,0,0,0.2); }
+  .entry-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #555;
+  }
 
-  .modal-top-row { display:flex; flex-direction:row; align-items:stretch; }
-  .modal-frame { background:var(--modal-accent, #d98c3f); display:flex; align-items:center; justify-content:center; height:60vh; flex:0 0 auto; }
-  .modal-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-  .modal-note { flex:0 0 300px; min-height:0; background:#fdf8ee; color:#3a3a3a; padding:26px 28px; font-size:1rem; line-height:1.6; border-left:6px solid var(--modal-accent, #d98c3f); overflow-y:auto; display:flex; flex-direction:column; justify-content:flex-start; }
-  .modal-note .entry-title { font-family:'Caveat', cursive; font-weight:700; font-size:1.4rem; color:#2b2b2b; margin-bottom:10px; }
-  .modal-note .entry-text { color:#555; font-size:1rem; }
+  .entry-hint {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 8px;
+  }
 
-  .modal-branch { display:none; margin-top:28px; }
-  .modal-branch.show { display:flex; }
-  .branch-frames { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
-  .branch-frame { position:relative; display:inline-block; cursor:default; }
-  .branch-frame img { display:block; max-width:340px; max-height:400px; width:auto; height:auto; border-radius:4px; box-shadow:0 16px 40px rgba(0,0,0,0.35); }
+  /* Hidden data-source containers: their content is read by JS and
+     rendered elsewhere (tag corner, popup gallery, popup quotes), so
+     none of these three show up directly on the main grid. */
+  .tags { display: none; }
+  .gallery { display: none; }
+  .quotes { display: none; }
+
+  /* ---------------------------------------------------------------- */
+  /* Modal pop-up                                                       */
+  /* ---------------------------------------------------------------- */
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: color-mix(in srgb, var(--modal-accent, #d98c3f) 14%, #faf6ef);
+    background-image: radial-gradient(color-mix(in srgb, var(--modal-accent, #d98c3f) 45%, #dcd5c7) 1px, transparent 1px);
+    background-size: 22px 22px;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 100;
+    padding: 40px 30px;
+    overflow-y: auto;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal-box {
+    width: auto;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    padding: 20px 20px 26px;
+    border-radius: 3px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    transform: rotate(-1deg);
+    position: relative;
+  }
+
+  .modal-tape {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-3deg);
+    width: 80px;
+    height: 26px;
+    background: var(--modal-accent, #d98c3f);
+    opacity: 0.85;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .modal-top-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .modal-frame {
+    background: var(--modal-accent, #d98c3f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    flex: 0 0 auto;
+  }
+
+  .modal-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .modal-note {
+    flex: 0 0 300px;
+    min-height: 0;
+    background: #fdf8ee;
+    color: #3a3a3a;
+    padding: 26px 28px;
+    font-size: 1rem;
+    line-height: 1.6;
+    border-left: 6px solid var(--modal-accent, #d98c3f);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .modal-note .entry-title {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: #2b2b2b;
+    margin-bottom: 10px;
+  }
+
+  .modal-note .entry-location {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--modal-accent);
+    margin-top: -6px;
+    margin-bottom: 10px;
+  }
+
+  .modal-note .entry-text {
+    color: #555;
+    font-size: 1rem;
+  }
+
+  /* Extra photos, pinned below the main photo + note row */
+  .modal-branch {
+    display: none;
+    margin-top: 28px;
+  }
+
+  .modal-branch.show {
+    display: flex;
+  }
+
+  .branch-frames {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .branch-frame {
+    position: relative;
+    display: inline-block;
+    cursor: default;
+  }
+
+  .branch-frame img {
+    display: block;
+    max-width: 340px;
+    max-height: 400px;
+    width: auto;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
   .branch-frame:nth-child(odd) { transform: rotate(-2deg); }
   .branch-frame:nth-child(even) { transform: rotate(1.5deg); }
 
-  .modal-quote-branch { display:none; margin-top:24px; }
-  .modal-quote-branch.show { display:flex; }
-  .quote-cards { display:flex; gap:26px; flex-wrap:wrap; justify-content:center; max-width:min(760px, 85vw); }
-  .quote-card { position:relative; max-width:270px; padding:22px 22px 20px; border-radius:2px; border:2px solid; box-shadow:0 10px 22px rgba(0,0,0,0.3); font-size:0.95rem; line-height:1.55; font-style:italic; color:#2b2b2b; }
+  /* Review quotes, pinned below the extra photos */
+  .modal-quote-branch {
+    display: none;
+    margin-top: 24px;
+  }
+
+  .modal-quote-branch.show {
+    display: flex;
+  }
+
+  .quote-cards {
+    display: flex;
+    gap: 26px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(760px, 85vw);
+  }
+
+  .quote-card {
+    position: relative;
+    max-width: 270px;
+    padding: 22px 22px 20px;
+    border-radius: 2px;
+    border: 2px solid;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    font-style: italic;
+    color: #2b2b2b;
+  }
+
   .quote-card:nth-child(odd) { transform: rotate(-2.5deg); }
   .quote-card:nth-child(even) { transform: rotate(2deg); }
-  .quote-source { display:block; margin-top:9px; font-family:'Space Mono', monospace; font-style:normal; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.4px; opacity:0.7; }
 
-  .pushpin { position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:15px; height:15px; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.5), inset -2px -2px 3px rgba(0,0,0,0.35), inset 2px 2px 3px rgba(255,255,255,0.5); z-index:6; }
+  .quote-source {
+    display: block;
+    margin-top: 9px;
+    font-family: 'Space Mono', monospace;
+    font-style: normal;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    opacity: 0.7;
+  }
 
-  .modal-close { position:fixed; top:20px; right:28px; background:none; border:none; color:#2b2b2b; font-size:2.2rem; line-height:1; cursor:pointer; z-index:101; text-shadow:0 1px 2px rgba(255,255,255,0.6); }
+  .pushpin {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    box-shadow:
+      0 3px 5px rgba(0, 0, 0, 0.5),
+      inset -2px -2px 3px rgba(0, 0, 0, 0.35),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.5);
+    z-index: 6;
+  }
+
+  .modal-close {
+    position: fixed;
+    top: 20px;
+    right: 28px;
+    background: none;
+    border: none;
+    color: #2b2b2b;
+    font-size: 2.2rem;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 101;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+  }
 </style>
 </head>
 <body>
@@ -132,7 +470,8 @@
     </div>
     <div class="caption">
       <div class="entry-title">Orange County Arboretum</div>
-      <div class="entry-text">Montgomery, NY — A park where people can gather and admire plants. People can bring food and borrow picnic tables, and enjoy a nice, peaceful area to walk.</div>
+      <div class="entry-location">Montgomery, NY</div>
+      <div class="entry-text">A park where people can gather and admire plants. People can bring food and borrow picnic tables, and enjoy a nice, peaceful area to walk.</div>
       <div class="tags">
         <span class="tag-chip">free</span>
         <span class="tag-chip">relaxing</span>
@@ -156,9 +495,8 @@
     </div>
     <div class="caption">
       <div class="entry-title">The Rock Wall Pub &amp; Grub</div>
-      <div class="entry-text">Cornwall-On-Hudson, NY
-
-A local bar and restaurant with a variety of events meant to bring people together. Bartenders are known to be welcoming and attentive.</div>
+      <div class="entry-location">Cornwall-On-Hudson, NY</div>
+      <div class="entry-text">A local bar and restaurant with a variety of events meant to bring people together. Bartenders are known to be welcoming and attentive.</div>
       <div class="tags">
         <span class="tag-chip">friendly staff</span>
         <span class="tag-chip">regular events</span>
@@ -174,6 +512,80 @@ A local bar and restaurant with a variety of events meant to bring people togeth
     </div>
   </div>
 
+  <div class="entry" onclick="openModal(this)">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/3. Google Maps.png" alt="Karen’s Cafe"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Karen’s Cafe</div>
+      <div class="entry-location">Greenwood Lake, NY</div>
+      <div class="entry-text">A homey spot with good food and outdoor seating, like you’re hanging out in someone’s backyard.</div>
+      <div class="tags">
+        <span class="tag-chip">relaxing</span>
+        <span class="tag-chip">cozy</span>
+        <span class="tag-chip">friendly staff</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/3. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Absolutely delicious and I can honestly say they make each item with such care and love."<span class="quote-source">— A C</span></div>
+      <div class="quote">"When I walked in the second time and the owner remembered my previous order."<span class="quote-source">— Business Business</span></div>
+    </div>
+  </div>
+
+  <div class="entry" onclick="openModal(this)">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/4. Google Maps.png" alt="Port Jervis Watershed Park and Recreation Area"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Port Jervis Watershed Park and Recreation Area</div>
+      <div class="entry-location">Port Jervis, NY</div>
+      <div class="entry-text">A hiking, mountain biking, and camping park that is well-maintained and suitable for all ability levels. The local Outdoor Club maintains the park and lead activities, which are open to the public. </div>
+      <div class="tags">
+        <span class="tag-chip">free</span>
+        <span class="tag-chip">relaxing</span>
+        <span class="tag-chip">dog friendly</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/4. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Gorgeous place! Great upkeep. The volunteers here are amazing. And it’s incredibly dog friendly."<span class="quote-source">— Craig K.</span></div>
+      <div class="quote">"The best hiking and biking in the Tri state area. All maintained by the non-profit group the outdoor club of Port Jervis."<span class="quote-source">— Philip J.</span></div>
+    </div>
+  </div>
+
+   <div class="entry" onclick="openModal(this)">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/5. Google Maps.png" alt="Social Island Farm "></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Social Island Farm </div>
+      <div class="entry-location">Goshen, NY</div>
+      <div class="entry-text">Offers social events like dancing, but also lets you bring a picnic, sit by the pond, relax, and enjoy farm activities.</div>
+      <div class="tags">
+        <span class="tag-chip">friendly staff</span>
+        <span class="tag-chip">regular events</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/4. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Absolutely phenomenal place for the entire family!!! The business is a local business and they more than go out of their way to make sure you have an amazing time!"<span class="quote-source">— Eddie W.</span></div>
+      <div class="quote">"A great way to spend an afternoon with friends and family while watching the sunset over the horizon."<span class="quote-source">— Michael A.</span></div>
+    </div>
+  </div>
+  
 </div>
 
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
@@ -196,17 +608,22 @@ A local bar and restaurant with a variety of events meant to bring people togeth
 <script>
   const MODAL_NOTE_WIDTH = 300;
   const MODAL_MIN_HEIGHT = 340;
-  const BRANCH_GAP = 24;
 
-  // ---- Tag style system ----
-  // Same tag text always produces the same color + pattern + tilt, but the
-  // combination of pattern and color gives far more visual variety than a
-  // single repeating-stripe look.
-  const TAG_COLORS = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89', '#a3684f', '#7d6b9e', '#b5566b', '#4f6d5c'];
+  // ------------------------------------------------------------------
+  // Tag style system
+  // ------------------------------------------------------------------
+  // Same tag text always produces the same color + pattern + tilt, but
+  // the combination of pattern and color gives far more visual variety
+  // than a single repeating-stripe look.
+
+  const TAG_COLORS = [
+    '#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f',
+    '#5c8a89', '#a3684f', '#7d6b9e', '#b5566b', '#4f6d5c'
+  ];
   const TAG_ROTATIONS = [-7, -5, -3, 3, 5, 7];
 
-  // Six distinct washi-tape patterns; each takes a base color and a lighter
-  // accent derived from it.
+  // Six distinct washi-tape patterns; each takes a base color and a
+  // lighter accent derived from it.
   const TAG_PATTERNS = [
     (c, light) => `background-color:${c};`,
     (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`,
@@ -253,21 +670,28 @@ A local bar and restaurant with a variety of events meant to bring people togeth
     return pin;
   }
 
-  // Picks readable text color + a matching shadow so the label stays legible
-  // regardless of how busy or dark the tape pattern underneath is.
+  // Picks readable text color + a matching shadow so the label stays
+  // legible regardless of how busy or dark the tape pattern underneath is.
   function getTextStyle(hex) {
     const { r, g, b } = hexToRgb(hex);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     if (luminance > 0.58) {
-      return { color: '#2b2116', shadow: '0 1px 0 rgba(255,255,255,0.75), 0 -1px 0 rgba(255,255,255,0.5), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5)' };
+      return {
+        color: '#2b2116',
+        shadow: '0 1px 0 rgba(255,255,255,0.75), 0 -1px 0 rgba(255,255,255,0.5), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5)'
+      };
     }
-    return { color: '#fdf6e3', shadow: '0 2px 3px rgba(0,0,0,0.75), 0 0 4px rgba(0,0,0,0.5)' };
+    return {
+      color: '#fdf6e3',
+      shadow: '0 2px 3px rgba(0,0,0,0.75), 0 0 4px rgba(0,0,0,0.5)'
+    };
   }
 
   function applyTagStyle(el, tagText, includeRotation) {
-    const colorIndex = hashText(tagText.trim().toLowerCase(), 'color') % TAG_COLORS.length;
-    const patternIndex = hashText(tagText.trim().toLowerCase(), 'pattern') % TAG_PATTERNS.length;
-    const rotIndex = hashText(tagText.trim().toLowerCase(), 'rotation') % TAG_ROTATIONS.length;
+    const key = tagText.trim().toLowerCase();
+    const colorIndex = hashText(key, 'color') % TAG_COLORS.length;
+    const patternIndex = hashText(key, 'pattern') % TAG_PATTERNS.length;
+    const rotIndex = hashText(key, 'rotation') % TAG_ROTATIONS.length;
 
     const color = TAG_COLORS[colorIndex];
     const light = lighten(color, 0.4);
@@ -280,6 +704,10 @@ A local bar and restaurant with a variety of events meant to bring people togeth
       el.style.transform = `rotate(${TAG_ROTATIONS[rotIndex]}deg)`;
     }
   }
+
+  // ------------------------------------------------------------------
+  // Tag corners + filter bar
+  // ------------------------------------------------------------------
 
   function initTagsAndFilters() {
     // Build corner tape tags on each photo, reading from the hidden
@@ -337,6 +765,10 @@ A local bar and restaurant with a variety of events meant to bring people togeth
 
   document.addEventListener('DOMContentLoaded', initTagsAndFilters);
 
+  // ------------------------------------------------------------------
+  // Modal pop-up
+  // ------------------------------------------------------------------
+
   function sizeMainFrame(imgEl) {
     const modalFrame = document.getElementById('modalFrame');
     const maxFrameHeight = window.innerHeight * 0.6;
@@ -361,27 +793,31 @@ A local bar and restaurant with a variety of events meant to bring people togeth
   function openModal(entryEl) {
     const mainImg = entryEl.querySelector('.frame img');
     const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
+    const locationEl = entryEl.querySelector('.entry-location');
+    const locationHTML = locationEl ? locationEl.outerHTML : '';
     const textHTML = entryEl.querySelector('.entry-text').outerHTML;
     const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
     const quoteSources = Array.from(entryEl.querySelectorAll('.quotes .quote'));
+
     const modalImg = document.getElementById('modalImg');
     const modalBranch = document.getElementById('modalBranch');
     const branchFrames = document.getElementById('branchFrames');
     const modalQuoteBranch = document.getElementById('modalQuoteBranch');
     const quoteCards = document.getElementById('quoteCards');
     const modalBox = document.getElementById('modalBox');
+    const modalOverlay = document.getElementById('modalOverlay');
 
     const accentColor = getComputedStyle(entryEl).getPropertyValue('--accent').trim();
     modalBox.style.setProperty('--modal-accent', accentColor);
-    document.getElementById('modalOverlay').style.setProperty('--modal-accent', accentColor);
+    modalOverlay.style.setProperty('--modal-accent', accentColor);
 
-    document.getElementById('modalNote').innerHTML = titleHTML + textHTML;
-    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalNote').innerHTML = titleHTML + locationHTML + textHTML;
+    modalOverlay.classList.add('open');
     branchFrames.innerHTML = '';
     quoteCards.innerHTML = '';
 
     modalImg.onload = function () {
-      const frameSize = sizeMainFrame(modalImg);
+      sizeMainFrame(modalImg);
 
       if (extraImgs.length > 0) {
         modalBranch.classList.add('show');
@@ -418,13 +854,16 @@ A local bar and restaurant with a variety of events meant to bring people togeth
     modalImg.src = mainImg.src;
     modalImg.alt = mainImg.alt;
   }
+
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
   }
+
   function closeModalOnBackdrop(e) {
     if (e.target.id === 'modalOverlay') closeModal();
   }
-  document.addEventListener('keydown', function(e) {
+
+  document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeModal();
   });
 </script>
