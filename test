@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Destination: Third Places</title>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<h1>Destination: Third Places</h1>
+<p class="subtitle">Third places aren't defined by what they sell — they're defined by how visitors talk about them. </p>
+
+<p class="subtitle">Some people believe that third places, or places other than home and work that serve as a gathering space for the community, are disappearing. It may or may not be true. But what is almost certainly true is that people are missing connections with their community. Destination: Third Places is searching for locations in Orange County that offer the main tenets of third places: a sense of belonging and comfort, accessible, and inexpensive. </p>
+
+<a class="map-link" href="map.html">Explore the map</a>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-label">Filter by:</span>
+</div>
+
+<div class="grid" id="grid">
+
+  <div class="entry" onclick="openModal(this)" data-lat="41.4746" data-lng="-74.2667">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/1. Google Maps.png" alt="Orange County Arboretum"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Orange County Arboretum</div>
+      <div class="entry-location">Montgomery, NY</div>
+      <div class="entry-text">A park where people can gather and admire plants. People can bring food and borrow picnic tables, and enjoy a nice, peaceful area to walk.</div>
+      <div class="tags">
+        <span class="tag-chip">free</span>
+        <span class="tag-chip">relaxing</span>
+        <span class="tag-chip">outdoors</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/1. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"There are many seating areas and picnic spots which we plan to return with family to do."<span class="quote-source">— Tamara M.</span></div>
+      <div class="quote">"Beautiful and peaceful place to walk around and enjoy nature."<span class="quote-source">— Michele B.</span></div>
+    </div>
+  </div>
+
+  <!-- Map pin location is approximate: replace data-lat / data-lng with exact coordinates -->
+  <div class="entry" onclick="openModal(this)" data-lat="41.4437" data-lng="-74.0176">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/2. Google Maps.png" alt="The Rock Wall Pub & Grub"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">The Rock Wall Pub &amp; Grub</div>
+      <div class="entry-location">Cornwall-On-Hudson, NY</div>
+      <div class="entry-text">A local bar and restaurant with a variety of events meant to bring people together. Bartenders are known to be welcoming and attentive.</div>
+      <div class="tags">
+        <span class="tag-chip">friendly staff</span>
+        <span class="tag-chip">regular events</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/2. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Very much a "local" pub but staff and regulars always welcoming."<span class="quote-source">— Steve S.</span></div>
+      <div class="quote">"Perfect post hike meal and beer!"<span class="quote-source">— Faryn S.</span></div>
+    </div>
+  </div>
+
+  <!-- Map pin location is approximate: replace data-lat / data-lng with exact coordinates -->
+  <div class="entry" onclick="openModal(this)" data-lat="41.2215" data-lng="-74.2935">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/3. Google Maps.png" alt="Karen’s Cafe"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Karen’s Cafe</div>
+      <div class="entry-location">Greenwood Lake, NY</div>
+      <div class="entry-text">A homey spot with good food and outdoor seating, like you’re hanging out in someone’s backyard.</div>
+      <div class="tags">
+        <span class="tag-chip">relaxing</span>
+        <span class="tag-chip">cozy</span>
+        <span class="tag-chip">friendly staff</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/3. Social Media.jpg" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Absolutely delicious and I can honestly say they make each item with such care and love."<span class="quote-source">— A C</span></div>
+      <div class="quote">"When I walked in the second time and the owner remembered my previous order."<span class="quote-source">— Business Business</span></div>
+      <div class="quote">"It feels like walking into a friend's backyard and you're about to enjoy their hospitality."<span class="quote-source">— Ainsley T.</span></div>
+    </div>
+  </div>
+
+  <div class="entry" onclick="openModal(this)" data-lat="41.3898" data-lng="-74.6914">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/4. Google Maps.png" alt="Port Jervis Watershed Park and Recreation Area"></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Port Jervis Watershed Park and Recreation Area</div>
+      <div class="entry-location">Port Jervis, NY</div>
+      <div class="entry-text">A hiking, mountain biking, and camping park that is well-maintained and suitable for all ability levels. The local Outdoor Club maintains the park and lead activities, which are open to the public. </div>
+      <div class="tags">
+        <span class="tag-chip">free</span>
+        <span class="tag-chip">relaxing</span>
+        <span class="tag-chip">dog friendly</span>
+        <span class="tag-chip">outdoors</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/4. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Gorgeous place! Great upkeep. The volunteers here are amazing. And it’s incredibly dog friendly."<span class="quote-source">— Craig K.</span></div>
+      <div class="quote">"The best hiking and biking in the Tri state area. All maintained by the non-profit group the outdoor club of Port Jervis."<span class="quote-source">— Philip J.</span></div>
+    </div>
+  </div>
+
+  <!-- Map pin location is approximate (town center): replace data-lat / data-lng with exact coordinates -->
+  <div class="entry" onclick="openModal(this)" data-lat="41.4023" data-lng="-74.3243">
+    <div class="polaroid">
+      <div class="tape"></div>
+      <div class="frame"><img src="images/5. Google Maps.jpg" alt="Social Island Farm "></div>
+    </div>
+    <div class="caption">
+      <div class="entry-title">Social Island Farm </div>
+      <div class="entry-location">Goshen, NY</div>
+      <div class="entry-text">A beautiful farm with wide-open space that offers social events like dancing, but also lets you bring a picnic, sit by the pond, relax, and enjoy farm activities.</div>
+      <div class="tags">
+        <span class="tag-chip">friendly staff</span>
+        <span class="tag-chip">regular events</span>
+        <span class="tag-chip">outdoors</span>
+      </div>
+      <div class="entry-hint">tap to explore &gt;</div>
+    </div>
+    <div class="gallery">
+      <img src="images/5. Social Media.PNG" alt="Description">
+    </div>
+    <div class="quotes">
+      <div class="quote">"Absolutely phenomenal place for the entire family!!! The business is a local business and they more than go out of their way to make sure you have an amazing time!"<span class="quote-source">— Eddie W.</span></div>
+      <div class="quote">"A great way to spend an afternoon with friends and family while watching the sunset over the horizon."<span class="quote-source">— Michael A.</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+  <button class="modal-close" onclick="closeModal()">&times;</button>
+  <div class="modal-box" id="modalBox">
+    <div class="modal-tape"></div>
+    <div class="modal-top-row">
+      <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
+      <div class="modal-note" id="modalNote"></div>
+    </div>
+    <div class="modal-branch" id="modalBranch">
+      <div class="branch-frames" id="branchFrames"></div>
+    </div>
+    <div class="modal-quote-branch" id="modalQuoteBranch">
+      <div class="quote-cards" id="quoteCards"></div>
+    </div>
+  </div>
+</div>
+
+<script src="site.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    addTagCorners(entries);
+    setupFilterBar(entries);
+  });
+</script>
+
+</body>
+</html>
