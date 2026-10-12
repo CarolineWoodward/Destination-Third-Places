@@ -32,11 +32,13 @@
       <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
       <div class="modal-note" id="modalNote"></div>
     </div>
-    <div class="modal-branch" id="modalBranch">
-      <div class="branch-frames" id="branchFrames"></div>
-    </div>
-    <div class="modal-quote-branch" id="modalQuoteBranch">
-      <div class="quote-cards" id="quoteCards"></div>
+    <div class="modal-extras">
+      <div class="modal-branch" id="modalBranch">
+        <div class="branch-frames" id="branchFrames"></div>
+      </div>
+      <div class="modal-quote-branch" id="modalQuoteBranch">
+        <div class="quote-cards" id="quoteCards"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -54,30 +56,6 @@
   const MAP_DEFAULT_CENTER = [41.4, -74.3]; // Orange County, NY
   const MAP_DEFAULT_ZOOM = 10;
 
-  // Reference town names drawn on the map (positions are approximate
-  // town centers). Big towns always show; "minor" ones appear once you
-  // zoom in. To add a town, add one line to this list.
-  const TOWN_LABELS = [
-    { name: 'Newburgh',       lat: 41.5034, lng: -74.0104 },
-    { name: 'Middletown',     lat: 41.4459, lng: -74.4229 },
-    { name: 'Goshen',         lat: 41.4023, lng: -74.3243 },
-    { name: 'Warwick',        lat: 41.2565, lng: -74.3599 },
-    { name: 'Monroe',         lat: 41.3304, lng: -74.1862 },
-    { name: 'Port Jervis',    lat: 41.3751, lng: -74.6924 },
-    { name: 'Montgomery',     lat: 41.5237, lng: -74.2368 },
-    { name: 'Cornwall',       lat: 41.4398, lng: -74.0396 },
-    { name: 'Greenwood Lake', lat: 41.2218, lng: -74.2951 },
-
-    { name: 'Walden',         lat: 41.5603, lng: -74.1885, minor: true },
-    { name: 'Washingtonville',lat: 41.4276, lng: -74.1632, minor: true },
-    { name: 'Chester',        lat: 41.3626, lng: -74.2716, minor: true },
-    { name: 'Florida',        lat: 41.3306, lng: -74.3596, minor: true },
-    { name: 'Pine Bush',      lat: 41.6076, lng: -74.2993, minor: true },
-    { name: 'Otisville',      lat: 41.4709, lng: -74.5376, minor: true },
-    { name: 'Highland Falls', lat: 41.3715, lng: -73.9668, minor: true },
-    { name: 'Tuxedo Park',    lat: 41.1971, lng: -74.1862, minor: true }
-  ];
-
   let placesMap = null;
   const mapMarkers = []; // { marker, entry }
 
@@ -89,52 +67,13 @@
     placesMap.on('click', function () { placesMap.scrollWheelZoom.enable(); });
     placesMap.on('mouseout', function () { placesMap.scrollWheelZoom.disable(); });
 
-    // Base map without labels, so our handwritten town names are the only
-    // names when zoomed out...
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    // OpenStreetMap's standard tiles: free and no API key needed. They
+    // already include town and street names. The attribution below is
+    // required by OpenStreetMap, so please leave it in.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(placesMap);
-
-    // ...and the map's own street/town labels take over once zoomed in close.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      minZoom: 13,
-      maxZoom: 19
-    }).addTo(placesMap);
-
-    addTownLabels();
-    placesMap.on('zoomend', updateTownLabelVisibility);
-    updateTownLabelVisibility();
-  }
-
-  function addTownLabels() {
-    // Own pane so labels always sit underneath the pins.
-    placesMap.createPane('townLabels');
-    const pane = placesMap.getPane('townLabels');
-    pane.style.zIndex = 450;
-    pane.style.pointerEvents = 'none';
-
-    TOWN_LABELS.forEach(function (town) {
-      L.marker([town.lat, town.lng], {
-        pane: 'townLabels',
-        interactive: false,
-        keyboard: false,
-        icon: L.divIcon({
-          className: 'town-label-icon',
-          html: '<span class="town-label' + (town.minor ? ' minor' : '') + '">' + town.name + '</span>',
-          iconSize: [0, 0]
-        })
-      }).addTo(placesMap);
-    });
-  }
-
-  function updateTownLabelVisibility() {
-    const zoom = placesMap.getZoom();
-    const container = placesMap.getContainer();
-    container.classList.toggle('show-minor-towns', zoom >= 11);
-    container.classList.toggle('hide-town-labels', zoom >= 13);
   }
 
   // Reads index.html and returns its .entry elements (as plain data).
