@@ -382,41 +382,10 @@ h1 {
   padding: 2px 10px;
 }
 
-/* Handwritten town names */
-.town-label-icon {
-  background: none;
-  border: none;
-}
-
-.town-label {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform: translate(-50%, 3px);
-  white-space: nowrap;
-  pointer-events: none;
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: 0.3px;
-  color: #6a5f4d;
-  text-shadow:
-    0 0 3px #fff, 0 0 3px #fff, 0 0 4px #fff,
-    1px 1px 0 rgba(255, 255, 255, 0.9), -1px -1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.town-label.minor {
-  display: none;
-  font-size: 1.1rem;
-  color: #85796a;
-}
-
-.show-minor-towns .town-label.minor {
-  display: block;
-}
-
-.hide-town-labels .town-label {
-  display: none !important;
+/* Softens OpenStreetMap's colors slightly to suit the cream paper look.
+   Only affects the map tiles, not the pins. Delete to see the original. */
+.leaflet-tile-pane {
+  filter: sepia(0.25) saturate(0.85);
 }
 
 @media (max-width: 600px) {
@@ -535,14 +504,25 @@ h1 {
   font-size: 1rem;
 }
 
-/* Extra photos, pinned below the main photo + note row */
+/* Extra photos and review quotes sit side by side below the main
+   photo + note row (they wrap onto separate lines on narrow screens). */
+.modal-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 44px;
+  max-width: 100%;
+}
+
+/* Extra photos, pinned */
 .modal-branch {
   display: none;
-  margin-top: 28px;
 }
 
 .modal-branch.show {
   display: flex;
+  margin-top: 28px;
 }
 
 .branch-frames {
@@ -571,22 +551,22 @@ h1 {
 .branch-frame:nth-child(odd) { transform: rotate(-2deg); }
 .branch-frame:nth-child(even) { transform: rotate(1.5deg); }
 
-/* Review quotes, pinned below the extra photos */
+/* Review quotes, pinned and stacked in a column beside the photos */
 .modal-quote-branch {
   display: none;
-  margin-top: 24px;
 }
 
 .modal-quote-branch.show {
   display: flex;
+  margin-top: 28px;
 }
 
 .quote-cards {
   display: flex;
-  gap: 26px;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: min(760px, 85vw);
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  max-width: min(300px, 85vw);
 }
 
 .quote-card {
