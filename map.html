@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explore the map | Destination: Third Places</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<a class="back-link" href="index.html">&larr; Back to all places</a>
+
+<h1>Explore the map</h1>
+<p class="subtitle">Every third place on the list so far, pinned to the map. Click a pin to open that place.</p>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-label">Filter by:</span>
+</div>
+
+<div class="map-polaroid">
+  <div class="tape"></div>
+  <div id="map"></div>
+</div>
+<div class="map-status" id="mapStatus"></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+  <button class="modal-close" onclick="closeModal()">&times;</button>
+  <div class="modal-box" id="modalBox">
+    <div class="modal-tape"></div>
+    <div class="modal-top-row">
+      <div class="modal-frame" id="modalFrame"><img id="modalImg" src="" alt=""></div>
+      <div class="modal-note" id="modalNote"></div>
+    </div>
+    <div class="modal-branch" id="modalBranch">
+      <div class="branch-frames" id="branchFrames"></div>
+    </div>
+    <div class="modal-quote-branch" id="modalQuoteBranch">
+      <div class="quote-cards" id="quoteCards"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="site.js"></script>
+<script>
+  // ------------------------------------------------------------------
+  // How this page works
+  // ------------------------------------------------------------------
+  // It loads index.html, reads every .entry from it, and drops a pin for
+  // each one that has data-lat / data-lng. So when you add a new entry
+  // to index.html (with coordinates), it shows up here automatically.
+
+  const MAP_DEFAULT_CENTER = [41.4, -74.3]; // Orange County, NY
+  const MAP_DEFAULT_ZOOM = 10;
+
+  // Reference town names drawn on the map (positions are approximate
+  // town centers). Big towns always show; "minor" ones appear once you
+  // zoom in. To add a town, add one line to this list.
+  const TOWN_LABELS = [
+    { name: 'Newburgh',       lat: 41.5034, lng: -74.0104 },
+    { name: 'Middletown',     lat: 41.4459, lng: -74.4229 },
+    { name: 'Goshen',         lat: 41.4023, lng: -74.3243 },
+    { name: 'Warwick',        lat: 41.2565, lng: -74.3599 },
+    { name: 'Monroe',         lat: 41.3304, lng: -74.1862 },
+    { name: 'Port Jervis',    lat: 41.3751, lng: -74.6924 },
+    { name: 'Montgomery',     lat: 41.5237, lng: -74.2368 },
+    { name: 'Cornwall',       lat: 41.4398, lng: -74.0396 },
+    { name: 'Greenwood Lake', lat: 41.2218, lng: -74.2951 },
+
+    { name: 'Walden',         lat: 41.5603, lng: -74.1885, minor: true },
+    { name: 'Washingtonville',lat: 41.4276, lng: -74.1632, minor: true },
+    { name: 'Chester',        lat: 41.3626, lng: -74.2716, minor: true },
+    { name: 'Florida',        lat: 41.3306, lng: -74.3596, minor: true },
+    { name: 'Pine Bush',      lat: 41.6076, lng: -74.2993, minor: true },
+    { name: 'Otisville',      lat: 41.4709, lng: -74.5376, minor: true },
+    { name: 'Highland Falls', lat: 41.3715, lng: -73.9668, minor: true },
+    { name: 'Tuxedo Park',    lat: 41.1971, lng: -74.1862, minor: true }
+  ];
+
+  let placesMap = null;
+  const mapMarkers = []; // { marker, entry }
+
+  function initMap() {
+    placesMap = L.map('map', { scrollWheelZoom: false, maxZoom: 18 })
+      .setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
+
+    // Don't hijack page scrolling: wheel-zoom only after the map is clicked.
+    placesMap.on('click', function () { placesMap.scrollWheelZoom.enable(); });
+    placesMap.on('mouseout', function () { placesMap.scrollWheelZoom.disable(); });
+
+    // Base map without labels, so our handwritten town names are the only
+    // names when zoomed out...
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(placesMap);
+
+    // ...and the map's own street/town labels take over once zoomed in close.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      minZoom: 13,
+      maxZoom: 19
+    }).addTo(placesMap);
+
+    addTownLabels();
+    placesMap.on('zoomend', updateTownLabelVisibility);
+    updateTownLabelVisibility();
+  }
+
+  function addTownLabels() {
+    // Own pane so labels always sit underneath the pins.
+    placesMap.createPane('townLabels');
+    const pane = placesMap.getPane('townLabels');
+    pane.style.zIndex = 450;
+    pane.style.pointerEvents = 'none';
+
+    TOWN_LABELS.forEach(function (town) {
+      L.marker([town.lat, town.lng], {
+        pane: 'townLabels',
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({
+          className: 'town-label-icon',
+          html: '<span class="town-label' + (town.minor ? ' minor' : '') + '">' + town.name + '</span>',
+          iconSize: [0, 0]
+        })
+      }).addTo(placesMap);
+    });
+  }
+
+  function updateTownLabelVisibility() {
+    const zoom = placesMap.getZoom();
+    const container = placesMap.getContainer();
+    container.classList.toggle('show-minor-towns', zoom >= 11);
+    container.classList.toggle('hide-town-labels', zoom >= 13);
+  }
+
+  // Reads index.html and returns its .entry elements (as plain data).
+  function loadEntries() {
+    return fetch('index.html', { cache: 'no-cache' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Could not load index.html (HTTP ' + res.status + ')');
+        return res.text();
+      })
+      .then(function (html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const entries = Array.from(doc.querySelectorAll('.entry'));
+        // The main page colors entries by position; do the same here.
+        entries.forEach(function (entry, i) {
+          entry.dataset.accent = ACCENT_COLORS[i % ACCENT_COLORS.length];
+        });
+        return entries;
+      });
+  }
+
+  function addPins(entries) {
+    entries.forEach(function (entry) {
+      const title = entry.querySelector('.entry-title').textContent.trim();
+      const lat = parseFloat(entry.dataset.lat);
+      const lng = parseFloat(entry.dataset.lng);
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn('No map coordinates yet for: ' + title);
+        return;
+      }
+
+      const accent = entry.dataset.accent;
+      const icon = L.divIcon({
+        className: 'map-pin-icon',
+        html: '<div class="map-pin"><div class="map-pin-head" style="background-image:' + pushpinGradient(accent) + '"></div><div class="map-pin-needle"></div></div>',
+        iconSize: [22, 34],
+        iconAnchor: [11, 34]
+      });
+
+      const marker = L.marker([lat, lng], { icon: icon, riseOnHover: true });
+      marker.bindTooltip(title, { direction: 'top', offset: [0, -30], className: 'map-tooltip' });
+      marker.on('click', function () { openModal(entry); });
+      marker.on('add', function () {
+        const el = marker.getElement();
+        if (el) {
+          el.setAttribute('role', 'button');
+          el.setAttribute('aria-label', 'Open ' + title);
+        }
+      });
+      marker.addTo(placesMap);
+      mapMarkers.push({ marker: marker, entry: entry });
+    });
+
+    if (mapMarkers.length === 0) {
+      document.getElementById('mapStatus').textContent = 'No places have map coordinates yet.';
+    }
+    fitMapToVisible();
+  }
+
+  function fitMapToVisible() {
+    const visible = mapMarkers.filter(function (m) {
+      return !m.entry.classList.contains('hidden');
+    });
+    if (visible.length === 0) return;
+    const bounds = L.latLngBounds(visible.map(function (m) { return m.marker.getLatLng(); }));
+    placesMap.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
+  }
+
+  // Keeps pins in step with the tag filter: hidden entries lose their pin.
+  function syncMapWithFilter() {
+    mapMarkers.forEach(function (m) {
+      const hidden = m.entry.classList.contains('hidden');
+      if (hidden && placesMap.hasLayer(m.marker)) placesMap.removeLayer(m.marker);
+      if (!hidden && !placesMap.hasLayer(m.marker)) m.marker.addTo(placesMap);
+    });
+    fitMapToVisible();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const status = document.getElementById('mapStatus');
+
+    if (typeof L === 'undefined') {
+      status.textContent = "The map couldn't load. Check your connection and try again.";
+      return;
+    }
+
+    initMap();
+
+    loadEntries()
+      .then(function (entries) {
+        addPins(entries);
+        setupFilterBar(entries, syncMapWithFilter);
+      })
+      .catch(function (err) {
+        console.error(err);
+        status.textContent = "Couldn't load the places. If you're previewing this file on your own computer, open it from the live site instead.";
+      });
+  });
+</script>
+
+</body>
+</html>
