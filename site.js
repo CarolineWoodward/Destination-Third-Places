@@ -118,9 +118,23 @@ function applyTagStyle(el, tagText, includeRotation) {
 // 2. Tag corners + filter bar
 // ------------------------------------------------------------------
 
+// Main page only: the cards show just "Town, NY". The full street
+// address is kept in data-full so the popup (and the map) can use it.
+function shortenLocations(entries) {
+  entries.forEach(function (entry) {
+    const el = entry.querySelector('.entry-location');
+    if (!el || el.dataset.full) return;
+    const full = el.textContent.replace(/\s+/g, ' ').trim();
+    const parts = full.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    el.dataset.full = full;
+    el.textContent = parts.slice(-2).join(', ');
+  });
+}
+
 // Main page only: builds the corner tape tags on each photo, reading
 // from the hidden .tag-chip data inside each entry's caption.
 function addTagCorners(entries) {
+  shortenLocations(entries);
   entries.forEach(function (entry) {
     const polaroid = entry.querySelector('.polaroid');
     const chips = Array.from(entry.querySelectorAll('.tag-chip'));
@@ -219,7 +233,13 @@ function openModal(entryEl) {
   const mainImg = entryEl.querySelector('.frame img');
   const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
   const locationEl = entryEl.querySelector('.entry-location');
-  const locationHTML = locationEl ? locationEl.outerHTML : '';
+  let locationHTML = '';
+  if (locationEl) {
+    const fullLocation = document.createElement('div');
+    fullLocation.className = 'entry-location';
+    fullLocation.textContent = locationEl.dataset.full || locationEl.textContent.trim();
+    locationHTML = fullLocation.outerHTML;
+  }
   const textHTML = entryEl.querySelector('.entry-text').outerHTML;
   const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
   const quoteSources = Array.from(entryEl.querySelectorAll('.quotes .quote'));
