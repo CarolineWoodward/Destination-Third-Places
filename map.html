@@ -50,8 +50,8 @@
   // How this page works
   // ------------------------------------------------------------------
   // It loads index.html, reads every .entry from it, and drops a pin for
-  // each one that has data-lat / data-lng. So when you add a new entry
-  // to index.html (with coordinates), it shows up here automatically.
+  // each one, placed by the address on its location line. So when you
+  // add a new entry to index.html, it shows up here automatically.
 
   const MAP_DEFAULT_CENTER = [41.4, -74.3]; // Orange County, NY
   const MAP_DEFAULT_ZOOM = 10;
@@ -67,6 +67,12 @@
     placesMap.on('click', function () { placesMap.scrollWheelZoom.enable(); });
     placesMap.on('mouseout', function () { placesMap.scrollWheelZoom.disable(); });
 
+    // If the visitor has started moving the map, pins that arrive late
+    // shouldn't pull the view away from where they're looking.
+    ['mousedown', 'touchstart', 'wheel'].forEach(function (evt) {
+      placesMap.getContainer().addEventListener(evt, function () { userMovedMap = true; }, { passive: true });
+    });
+
     // OpenStreetMap's standard tiles: free and no API key needed. They
     // already include town and street names. The attribution below is
     // required by OpenStreetMap, so please leave it in.
@@ -74,6 +80,7 @@
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(placesMap);
+
   }
 
   // Reads index.html and returns its .entry elements (as plain data).
@@ -94,42 +101,148 @@
       });
   }
 
-  function addPins(entries) {
-    entries.forEach(function (entry) {
-      const title = entry.querySelector('.entry-title').textContent.trim();
-      const lat = parseFloat(entry.dataset.lat);
-      const lng = parseFloat(entry.dataset.lng);
-      if (isNaN(lat) || isNaN(lng)) {
-        console.warn('No map coordinates yet for: ' + title);
-        return;
+  // ------------------------------------------------------------------
+  // Placing the pins
+  // ------------------------------------------------------------------
+  // Every entry is pinned by looking up the address written on its
+  // location line (for example "5 Water Street, Port Jervis, NY") on
+  // OpenStreetMap. Lookups run one per second to stay within their usage
+  // rules, and each answer is remembered in the visitor's browser, so
+  // repeat visits are instant.
+
+  const PIN_CACHE_KEY = 'third-places-pin-cache-v1';
+  let lastLookupAt = 0;
+  let lookupsBlocked = false;
+  let userMovedMap = false;
+
+  function readPinCache() {
+    try {
+      return JSON.parse(localStorage.getItem(PIN_CACHE_KEY) || '{}') || {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function savePinCache(cache) {
+    try {
+      localStorage.setItem(PIN_CACHE_KEY, JSON.stringify(cache));
+    } catch (err) { /* storage unavailable: lookups just repeat next visit */ }
+  }
+
+  function entryTitle(entry) {
+    return entry.querySelector('.entry-title').textContent.trim();
+  }
+
+  function entryLocationText(entry) {
+    const el = entry.querySelector('.entry-location');
+    return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  }
+
+  // "5 Water Street, Port Jervis, NY" -> "Port Jervis, NY"
+  function townOf(text) {
+    const parts = text.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    return parts.slice(-2).join(', ');
+  }
+
+  async function askOpenStreetMap(query) {
+    const wait = lastLookupAt + 1100 - Date.now();
+    if (wait > 0) await new Promise(function (resolve) { setTimeout(resolve, wait); });
+    lastLookupAt = Date.now();
+
+    // bounded=1 keeps answers inside the Orange County area, so a
+    // "Water Street" in some other state can't be picked by mistake.
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&viewbox=-75.0,41.8,-73.8,41.0&bounded=1&q=' + encodeURIComponent(query);
+    const res = await fetch(url);
+    if (res.status === 429 || res.status === 403) lookupsBlocked = true;
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.length) return null;
+    // If OpenStreetMap could only find the town (not the street address),
+    // the pin is flagged as approximate.
+    const approximate = /^(city|town|village|hamlet|suburb|municipality|county|state|neighbourhood|quarter|borough|city_district)$/.test(data[0].addresstype || '');
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), approximate: approximate };
+  }
+
+  async function findAddress(entry, address) {
+    try {
+      let hit = await askOpenStreetMap(address);
+      if (!hit && !lookupsBlocked) {
+        hit = await askOpenStreetMap(entryTitle(entry) + ', ' + townOf(address));
       }
+      return hit;
+    } catch (err) {
+      console.warn('Address lookup failed for "' + address + '":', err);
+      return null;
+    }
+  }
 
-      const accent = entry.dataset.accent;
-      const icon = L.divIcon({
-        className: 'map-pin-icon',
-        html: '<div class="map-pin"><div class="map-pin-head" style="background-image:' + pushpinGradient(accent) + '"></div><div class="map-pin-needle"></div></div>',
-        iconSize: [22, 34],
-        iconAnchor: [11, 34]
-      });
-
-      const marker = L.marker([lat, lng], { icon: icon, riseOnHover: true });
-      marker.bindTooltip(title, { direction: 'top', offset: [0, -30], className: 'map-tooltip' });
-      marker.on('click', function () { openModal(entry); });
-      marker.on('add', function () {
-        const el = marker.getElement();
-        if (el) {
-          el.setAttribute('role', 'button');
-          el.setAttribute('aria-label', 'Open ' + title);
-        }
-      });
-      marker.addTo(placesMap);
-      mapMarkers.push({ marker: marker, entry: entry });
+  function placePin(entry, lat, lng, approximate) {
+    const title = entryTitle(entry);
+    const accent = entry.dataset.accent;
+    const icon = L.divIcon({
+      className: 'map-pin-icon',
+      html: '<div class="map-pin"><div class="map-pin-head" style="background-image:' + pushpinGradient(accent) + '"></div><div class="map-pin-needle"></div></div>',
+      iconSize: [22, 34],
+      iconAnchor: [11, 34]
     });
 
-    if (mapMarkers.length === 0) {
-      document.getElementById('mapStatus').textContent = 'No places have map coordinates yet.';
-    }
+    const marker = L.marker([lat, lng], { icon: icon, riseOnHover: true });
+    const label = approximate ? title + ' (approximate location)' : title;
+    marker.bindTooltip(label, { direction: 'top', offset: [0, -30], className: 'map-tooltip' });
+    marker.on('click', function () { openModal(entry); });
+    marker.on('add', function () {
+      const el = marker.getElement();
+      if (el) {
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', 'Open ' + title);
+      }
+    });
+    mapMarkers.push({ marker: marker, entry: entry });
+    if (!entry.classList.contains('hidden')) marker.addTo(placesMap);
+  }
+
+  async function loadPins(entries) {
+    const status = document.getElementById('mapStatus');
+    const cache = readPinCache();
+    const pending = [];
+
+    entries.forEach(function (entry) {
+      const address = entryLocationText(entry);
+
+      if (!address) {
+        console.warn('No location line yet for: ' + entryTitle(entry));
+      } else if (cache[address]) {
+        placePin(entry, cache[address].lat, cache[address].lng, cache[address].approximate);
+      } else {
+        pending.push({ entry: entry, address: address });
+      }
+    });
+
     fitMapToVisible();
+
+    const failed = [];
+    for (let i = 0; i < pending.length; i++) {
+      const item = pending[i];
+      status.textContent = 'Finding places on the map (' + (i + 1) + ' of ' + pending.length + ')...';
+
+      const found = lookupsBlocked ? null : await findAddress(item.entry, item.address);
+      if (found) {
+        cache[item.address] = found;
+        savePinCache(cache);
+        placePin(item.entry, found.lat, found.lng, found.approximate);
+      } else {
+        failed.push(entryTitle(item.entry));
+      }
+    }
+
+    if (lookupsBlocked) {
+      status.textContent = 'The address lookup service is busy right now, so some places may be missing. Please try again in a little while.';
+    } else if (failed.length) {
+      status.textContent = "Couldn't find these on the map: " + failed.join(', ') + '. Check the address on their location line.';
+    } else {
+      status.textContent = '';
+    }
+    if (pending.length > 0 && !userMovedMap) fitMapToVisible();
   }
 
   function fitMapToVisible() {
@@ -163,7 +276,7 @@
 
     loadEntries()
       .then(function (entries) {
-        addPins(entries);
+        loadPins(entries);
         setupFilterBar(entries, syncMapWithFilter);
       })
       .catch(function (err) {
