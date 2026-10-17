@@ -1,313 +1,624 @@
-// =====================================================================
-// site.js: shared by index.html and map.html
-//   1. color helpers and the washi-tape tag styles
-//   2. tag corners (main page) and the tag filter bar (both pages)
-//   3. the click-to-open popup
-// =====================================================================
+/* site.css: styles for index.html and map.html */
 
-const MODAL_NOTE_WIDTH = 300;
-const MODAL_MIN_HEIGHT = 340;
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
 
-// Accent colors, in the same order as the :nth-child rules in site.css.
-// map.html reads entries from index.html as plain data, so it needs
-// its own copy of this list.
-const ACCENT_COLORS = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89'];
-
-// ------------------------------------------------------------------
-// 1. Tag style system
-// ------------------------------------------------------------------
-// Same tag text always produces the same color + pattern + tilt, but
-// the combination of pattern and color gives far more visual variety
-// than a single repeating-stripe look.
-
-const TAG_COLORS = [
-  '#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f',
-  '#5c8a89', '#a3684f', '#7d6b9e', '#b5566b', '#4f6d5c'
-];
-const TAG_ROTATIONS = [-7, -5, -3, 3, 5, 7];
-
-// Six distinct washi-tape patterns; each takes a base color and a
-// lighter accent derived from it.
-const TAG_PATTERNS = [
-  (c, light) => `background-color:${c};`,
-  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`,
-  (c, light) => `background-color:${c}; background-image: radial-gradient(${light} 1.8px, transparent 1.8px); background-size:9px 9px;`,
-  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(-45deg, transparent, transparent 4px, ${light} 4px, ${light} 8px);`,
-  (c, light) => `background-color:${c}; background-image: linear-gradient(90deg, ${light} 1px, transparent 1px), linear-gradient(0deg, ${light} 1px, transparent 1px); background-size:8px 8px;`,
-  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(0deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`
-];
-
-function hashText(text, salt) {
-  let hash = 0;
-  const s = salt + text;
-  for (let i = 0; i < s.length; i++) {
-    hash = (hash * 31 + s.charCodeAt(i)) % 100000;
-  }
-  return Math.abs(hash);
+* {
+  box-sizing: border-box;
 }
 
-function hexToRgb(hex) {
-  const h = hex.replace('#', '');
-  return {
-    r: parseInt(h.substring(0, 2), 16),
-    g: parseInt(h.substring(2, 4), 16),
-    b: parseInt(h.substring(4, 6), 16)
-  };
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #faf6ef;
+  background-image: radial-gradient(#dcd5c7 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: #3a3a3a;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 50px 30px 100px;
 }
 
-function lighten(hex, amount) {
-  const { r, g, b } = hexToRgb(hex);
-  const mix = (channel) => Math.round(channel + (255 - channel) * amount);
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+h1 {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 3rem;
+  color: #2b2b2b;
+  margin-bottom: 6px;
 }
 
-function darken(hex, amount) {
-  const { r, g, b } = hexToRgb(hex);
-  const mix = (channel) => Math.round(channel * (1 - amount));
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+.subtitle {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 640px;
+  color: #555;
+  margin-bottom: 36px;
 }
 
-// The glossy pushpin look, used on popup photos/quotes and map pins.
-function pushpinGradient(accentColor) {
-  return `radial-gradient(circle at 35% 35%, ${lighten(accentColor, 0.55)}, ${accentColor} 55%, ${darken(accentColor, 0.3)} 100%)`;
+/* ---------------------------------------------------------------- */
+/* Filter bar                                                        */
+/* ---------------------------------------------------------------- */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 50px;
+  align-items: center;
 }
 
-function makePushpin(accentColor) {
-  const pin = document.createElement('div');
-  pin.className = 'pushpin';
-  pin.style.backgroundImage = pushpinGradient(accentColor);
-  return pin;
+.filter-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin-right: 4px;
 }
 
-// Picks readable text color + a matching shadow so the label stays
-// legible regardless of how busy or dark the tape pattern underneath is.
-function getTextStyle(hex) {
-  const { r, g, b } = hexToRgb(hex);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  if (luminance > 0.58) {
-    return {
-      color: '#2b2116',
-      shadow: '0 1px 0 rgba(255,255,255,0.75), 0 -1px 0 rgba(255,255,255,0.5), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5)'
-    };
-  }
-  return {
-    color: '#fdf6e3',
-    shadow: '0 2px 3px rgba(0,0,0,0.75), 0 0 4px rgba(0,0,0,0.5)'
-  };
+.filter-tag {
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 2px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  opacity: 0.8;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
-function applyTagStyle(el, tagText, includeRotation) {
-  const key = tagText.trim().toLowerCase();
-  const colorIndex = hashText(key, 'color') % TAG_COLORS.length;
-  const patternIndex = hashText(key, 'pattern') % TAG_PATTERNS.length;
-  const rotIndex = hashText(key, 'rotation') % TAG_ROTATIONS.length;
+.filter-tag:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
 
-  const color = TAG_COLORS[colorIndex];
-  const light = lighten(color, 0.4);
-  const textStyle = getTextStyle(color);
+.filter-tag.active {
+  opacity: 1;
+  outline: 2px solid #2b2b2b;
+  outline-offset: 2px;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
 
-  el.style.cssText += TAG_PATTERNS[patternIndex](color, light);
-  el.style.color = textStyle.color;
-  el.style.textShadow = textStyle.shadow;
-  if (includeRotation) {
-    el.style.transform = `rotate(${TAG_ROTATIONS[rotIndex]}deg)`;
+/* ---------------------------------------------------------------- */
+/* Entry grid + polaroid cards                                       */
+/* ---------------------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 70px 40px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-// ------------------------------------------------------------------
-// 2. Tag corners + filter bar
-// ------------------------------------------------------------------
-
-// Main page only: the cards show just "Town, NY". The full street
-// address is kept in data-full so the popup (and the map) can use it.
-function shortenLocations(entries) {
-  entries.forEach(function (entry) {
-    const el = entry.querySelector('.entry-location');
-    if (!el || el.dataset.full) return;
-    const full = el.textContent.replace(/\s+/g, ' ').trim();
-    const parts = full.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
-    el.dataset.full = full;
-    el.textContent = parts.slice(-2).join(', ');
-  });
-}
-
-// Main page only: builds the corner tape tags on each photo, reading
-// from the hidden .tag-chip data inside each entry's caption.
-function addTagCorners(entries) {
-  shortenLocations(entries);
-  entries.forEach(function (entry) {
-    const polaroid = entry.querySelector('.polaroid');
-    const chips = Array.from(entry.querySelectorAll('.tag-chip'));
-    if (!polaroid || chips.length === 0) return;
-
-    const tagCorner = document.createElement('div');
-    tagCorner.className = 'tag-corner';
-    chips.forEach(function (chip) {
-      const strip = document.createElement('div');
-      strip.className = 'tag-strip';
-      strip.textContent = chip.textContent.trim();
-      applyTagStyle(strip, chip.textContent, true);
-      tagCorner.appendChild(strip);
-    });
-    polaroid.appendChild(tagCorner);
-  });
-}
-
-// Both pages: builds one filter button per unique tag. Clicking buttons
-// hides/shows entries (adds/removes the "hidden" class), then calls
-// onChange() so a page can react (the map page updates its pins).
-function setupFilterBar(entries, onChange) {
-  const filterBar = document.getElementById('filterBar');
-  if (!filterBar) return;
-
-  const allTags = new Set();
-  entries.forEach(function (entry) {
-    entry.querySelectorAll('.tag-chip').forEach(function (chip) {
-      allTags.add(chip.textContent.trim());
-    });
-  });
-
-  const activeTags = new Set();
-
-  allTags.forEach(function (tagText) {
-    const btn = document.createElement('button');
-    btn.className = 'filter-tag';
-    btn.textContent = tagText;
-    applyTagStyle(btn, tagText, false);
-    btn.onclick = function () {
-      if (activeTags.has(tagText)) {
-        activeTags.delete(tagText);
-        btn.classList.remove('active');
-      } else {
-        activeTags.add(tagText);
-        btn.classList.add('active');
-      }
-      applyFilter(entries, activeTags);
-      if (onChange) onChange();
-    };
-    filterBar.appendChild(btn);
-  });
-}
-
-function applyFilter(entries, activeTags) {
-  entries.forEach(function (entry) {
-    const entryTags = Array.from(entry.querySelectorAll('.tag-chip')).map(function (c) {
-      return c.textContent.trim();
-    });
-    const shouldShow = activeTags.size === 0 || entryTags.some(function (t) {
-      return activeTags.has(t);
-    });
-    entry.classList.toggle('hidden', !shouldShow);
-  });
-}
-
-// ------------------------------------------------------------------
-// 3. Popup
-// ------------------------------------------------------------------
-
-function sizeMainFrame(imgEl) {
-  const modalFrame = document.getElementById('modalFrame');
-  const maxFrameHeight = window.innerHeight * 0.6;
-  const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
-
-  let renderedHeight = Math.min(maxFrameHeight, imgEl.naturalHeight);
-  let renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
-  if (renderedWidth > maxAllowedWidth) {
-    renderedWidth = maxAllowedWidth;
-    renderedHeight = (imgEl.naturalHeight / imgEl.naturalWidth) * renderedWidth;
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
   }
-  if (renderedHeight < MODAL_MIN_HEIGHT) {
-    renderedHeight = MODAL_MIN_HEIGHT;
-    renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
-    if (renderedWidth > maxAllowedWidth) renderedWidth = maxAllowedWidth;
+}
+
+.entry {
+  cursor: pointer;
+}
+
+.entry.hidden {
+  display: none;
+}
+
+/* Accent color cycles every 6 entries */
+.entry:nth-child(6n+1) { --accent: #c17b5e; }
+.entry:nth-child(6n+2) { --accent: #6b8ca8; }
+.entry:nth-child(6n+3) { --accent: #d9a441; }
+.entry:nth-child(6n+4) { --accent: #8a9a7e; }
+.entry:nth-child(6n+5) { --accent: #c98b7f; }
+.entry:nth-child(6n+6) { --accent: #5c8a89; }
+
+/* Alternating tilt */
+.entry:nth-child(odd) .polaroid { --rot: -3deg; }
+.entry:nth-child(even) .polaroid { --rot: 2.5deg; }
+
+.polaroid {
+  position: relative;
+  background: #fff;
+  padding: 12px 12px 34px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
+  transform: rotate(var(--rot, -2deg));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.entry:hover .polaroid {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+.tape {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-4deg);
+  width: 64px;
+  height: 22px;
+  background: var(--accent);
+  opacity: 0.85;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.frame {
+  width: 100%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.frame img {
+  width: 100%;
+  display: block;
+}
+
+/* Tape tags, bottom-right corner of the photo */
+.tag-corner {
+  position: absolute;
+  bottom: 30px;
+  right: -10px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 5;
+}
+
+.tag-strip {
+  padding: 5px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-radius: 1px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------------------------------------------------------------- */
+/* Caption text                                                      */
+/* ---------------------------------------------------------------- */
+
+.caption {
+  margin-top: 16px;
+}
+
+.entry-title {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: #2b2b2b;
+  margin-bottom: 2px;
+}
+
+.entry-location {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.entry-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #555;
+}
+
+.entry-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
+/* Hidden data-source containers: their content is read by JS and
+   rendered elsewhere (tag corner, popup gallery, popup quotes), so
+   none of these three show up directly on the main grid. */
+.tags { display: none; }
+.gallery { display: none; }
+.quotes { display: none; }
+
+/* ---------------------------------------------------------------- */
+/* "Explore the map" link (main page)                                 */
+/* ---------------------------------------------------------------- */
+
+.map-link {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 34px;
+  padding: 14px 34px 12px;
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  color: #3b2f26;
+  background-color: #fffaf0;
+  border: 2px dashed rgba(59, 47, 38, 0.4);
+  /* ticket-stub notches on the left and right edges */
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 8px, #000 8.5px) left / 51% 100% no-repeat,
+                radial-gradient(circle at 100% 50%, transparent 8px, #000 8.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 8px, #000 8.5px) left / 51% 100% no-repeat,
+        radial-gradient(circle at 100% 50%, transparent 8px, #000 8.5px) right / 51% 100% no-repeat;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.22));
+  transform: rotate(-1.5deg);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+/* a little arrow, like "this way" on a luggage tag */
+.map-link::after {
+  content: '\2192';
+  margin-left: 10px;
+  color: #c17b5e;
+}
+
+.map-link:hover {
+  transform: rotate(0deg) translateY(-2px);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+}
+
+/* ---------------------------------------------------------------- */
+/* Map page                                                           */
+/* ---------------------------------------------------------------- */
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 22px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #555;
+}
+
+.back-link:hover {
+  color: #2b2b2b;
+  text-decoration: underline;
+}
+
+.map-polaroid {
+  --accent: #6b8ca8;
+  position: relative;
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
+}
+
+#map {
+  height: 72vh;
+  min-height: 460px;
+  width: 100%;
+  background: #e8e2d4;
+  isolation: isolate; /* keeps Leaflet's internal z-indexes below the popup */
+}
+
+.map-status {
+  margin-top: 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.leaflet-container {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Pins */
+.map-pin-icon {
+  background: none;
+  border: none;
+}
+
+.map-pin {
+  position: relative;
+  width: 22px;
+  height: 34px;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+}
+
+.map-pin:hover {
+  transform: translateY(-3px) scale(1.1);
+}
+
+.map-pin-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 4px rgba(0, 0, 0, 0.3),
+    inset 3px 3px 4px rgba(255, 255, 255, 0.5);
+}
+
+.map-pin-needle {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  background: linear-gradient(#8a8a8a, #333);
+  border-radius: 0 0 1px 1px;
+}
+
+.leaflet-tooltip.map-tooltip {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #2b2b2b;
+  background: #fff;
+  border: none;
+  border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  padding: 2px 10px;
+}
+
+/* Softens OpenStreetMap's colors slightly to suit the cream paper look.
+   Only affects the map tiles, not the pins. Delete to see the original. */
+.leaflet-tile-pane {
+  filter: sepia(0.25) saturate(0.85);
+}
+
+@media (max-width: 600px) {
+  #map {
+    height: 60vh;
+    min-height: 340px;
   }
-  modalFrame.style.width = renderedWidth + 'px';
-  modalFrame.style.height = renderedHeight + 'px';
-  return { width: renderedWidth, height: renderedHeight };
 }
 
-// entryEl is an .entry element. On the main page it's a live element;
-// on the map page it comes from index.html parsed as data, in which
-// case entryEl.dataset.accent holds its accent color.
-function openModal(entryEl) {
-  const mainImg = entryEl.querySelector('.frame img');
-  const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
-  const locationEl = entryEl.querySelector('.entry-location');
-  let locationHTML = '';
-  if (locationEl) {
-    const fullLocation = document.createElement('div');
-    fullLocation.className = 'entry-location';
-    fullLocation.textContent = locationEl.dataset.full || locationEl.textContent.trim();
-    locationHTML = fullLocation.outerHTML;
-  }
-  const textHTML = entryEl.querySelector('.entry-text').outerHTML;
-  const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
-  const quoteSources = Array.from(entryEl.querySelectorAll('.quotes .quote'));
+/* ---------------------------------------------------------------- */
+/* Modal pop-up                                                       */
+/* ---------------------------------------------------------------- */
 
-  const modalImg = document.getElementById('modalImg');
-  const modalBranch = document.getElementById('modalBranch');
-  const branchFrames = document.getElementById('branchFrames');
-  const modalQuoteBranch = document.getElementById('modalQuoteBranch');
-  const quoteCards = document.getElementById('quoteCards');
-  const modalBox = document.getElementById('modalBox');
-  const modalOverlay = document.getElementById('modalOverlay');
-
-  const accentColor = entryEl.dataset.accent || getComputedStyle(entryEl).getPropertyValue('--accent').trim();
-  modalBox.style.setProperty('--modal-accent', accentColor);
-  modalOverlay.style.setProperty('--modal-accent', accentColor);
-
-  document.getElementById('modalNote').innerHTML = titleHTML + locationHTML + textHTML;
-  modalOverlay.classList.add('open');
-  branchFrames.innerHTML = '';
-  quoteCards.innerHTML = '';
-
-  modalImg.onload = function () {
-    sizeMainFrame(modalImg);
-
-    if (extraImgs.length > 0) {
-      modalBranch.classList.add('show');
-      extraImgs.forEach(function (imgSource) {
-        const branchFrame = document.createElement('div');
-        branchFrame.className = 'branch-frame';
-        const img = document.createElement('img');
-        img.src = imgSource.getAttribute('src');
-        img.alt = imgSource.getAttribute('alt') || '';
-        branchFrame.appendChild(img);
-        branchFrame.appendChild(makePushpin(accentColor));
-        branchFrames.appendChild(branchFrame);
-      });
-    } else {
-      modalBranch.classList.remove('show');
-    }
-
-    if (quoteSources.length > 0) {
-      modalQuoteBranch.classList.add('show');
-      const tint = lighten(accentColor, 0.88);
-      quoteSources.forEach(function (quoteEl) {
-        const card = document.createElement('div');
-        card.className = 'quote-card';
-        card.innerHTML = quoteEl.innerHTML;
-        card.style.background = tint;
-        card.style.borderColor = accentColor;
-        card.appendChild(makePushpin(accentColor));
-        quoteCards.appendChild(card);
-      });
-    } else {
-      modalQuoteBranch.classList.remove('show');
-    }
-  };
-  modalImg.src = mainImg.getAttribute('src');
-  modalImg.alt = mainImg.getAttribute('alt') || '';
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--modal-accent, #d98c3f) 14%, #faf6ef);
+  background-image: radial-gradient(color-mix(in srgb, var(--modal-accent, #d98c3f) 45%, #dcd5c7) 1px, transparent 1px);
+  background-size: 22px 22px;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 100;
+  padding: 40px 30px;
+  overflow-y: auto;
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
+.modal-overlay.open {
+  display: flex;
 }
 
-function closeModalOnBackdrop(e) {
-  if (e.target.id === 'modalOverlay') closeModal();
+.modal-box {
+  width: auto;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  padding: 20px 20px 26px;
+  border-radius: 3px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  transform: rotate(-1deg);
+  position: relative;
 }
 
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') closeModal();
-});
+.modal-tape {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 80px;
+  height: 26px;
+  background: var(--modal-accent, #d98c3f);
+  opacity: 0.85;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-top-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.modal-frame {
+  background: var(--modal-accent, #d98c3f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  flex: 0 0 auto;
+}
+
+.modal-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.modal-note {
+  flex: 0 0 300px;
+  min-height: 0;
+  background: #fdf8ee;
+  color: #3a3a3a;
+  padding: 26px 28px;
+  font-size: 1rem;
+  line-height: 1.6;
+  border-left: 6px solid var(--modal-accent, #d98c3f);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.modal-note .entry-title {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: #2b2b2b;
+  margin-bottom: 10px;
+}
+
+.modal-note .entry-location {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--modal-accent);
+  margin-top: -6px;
+  margin-bottom: 10px;
+}
+
+.modal-note .entry-text {
+  color: #555;
+  font-size: 1rem;
+}
+
+/* Extra photos and review quotes sit side by side below the main
+   photo + note row (they wrap onto separate lines on narrow screens). */
+.modal-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 44px;
+  max-width: 100%;
+}
+
+/* Extra photos, pinned */
+.modal-branch {
+  display: none;
+}
+
+.modal-branch.show {
+  display: flex;
+  margin-top: 28px;
+}
+
+.branch-frames {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.branch-frame {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+}
+
+.branch-frame img {
+  display: block;
+  max-width: 340px;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.branch-frame:nth-child(odd) { transform: rotate(-2deg); }
+.branch-frame:nth-child(even) { transform: rotate(1.5deg); }
+
+/* Review quotes, pinned and stacked in a column beside the photos */
+.modal-quote-branch {
+  display: none;
+}
+
+.modal-quote-branch.show {
+  display: flex;
+  margin-top: 28px;
+}
+
+.quote-cards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  max-width: min(300px, 85vw);
+}
+
+.quote-card {
+  position: relative;
+  max-width: 270px;
+  padding: 22px 22px 20px;
+  border-radius: 2px;
+  border: 2px solid;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: #2b2b2b;
+}
+
+.quote-card:nth-child(odd) { transform: rotate(-2.5deg); }
+.quote-card:nth-child(even) { transform: rotate(2deg); }
+
+.quote-source {
+  display: block;
+  margin-top: 9px;
+  font-family: 'Space Mono', monospace;
+  font-style: normal;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.7;
+}
+
+.pushpin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.5),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.35),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.5);
+  z-index: 6;
+}
+
+.modal-close {
+  position: fixed;
+  top: 20px;
+  right: 28px;
+  background: none;
+  border: none;
+  color: #2b2b2b;
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 101;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
