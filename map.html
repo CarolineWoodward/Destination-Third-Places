@@ -170,6 +170,11 @@
   async function findAddress(entry, address) {
     try {
       let hit = await askOpenStreetMap(address);
+      // Highway names: "92 NY-284" is also written "92 State Route 284".
+      const spelledOut = address.replace(/\bNY-(\d+[A-Z]?)\b/g, 'State Route $1');
+      if (!hit && !lookupsBlocked && spelledOut !== address) {
+        hit = await askOpenStreetMap(spelledOut);
+      }
       if (!hit && !lookupsBlocked) {
         hit = await askOpenStreetMap(entryTitle(entry) + ', ' + townOf(address));
       }
