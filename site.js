@@ -173,6 +173,85 @@ function addTagCorners(entries) {
   });
 }
 
+// Main page only: pins each card's accent color to its place in the
+// file (not its place on screen), so colors stay with their cards when
+// the order changes. Run this BEFORE reordering.
+function lockEntryColors(entries) {
+  entries.forEach(function (entry, i) {
+    const color = ACCENT_COLORS[i % ACCENT_COLORS.length];
+    entry.dataset.accent = color;
+    entry.style.setProperty('--accent', color);
+  });
+}
+
+// Main page only: a random order on every visit, plus an A-Z button.
+function setupSorting(grid, entries) {
+  if (!grid) return;
+
+  function show(list) {
+    list.forEach(function (entry) { grid.appendChild(entry); });
+  }
+
+  function shuffle() {
+    const list = entries.slice();
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    }
+    show(list);
+  }
+
+  // Ignores a leading "The " so "The Rock Wall Pub" files under R.
+  function sortKey(entry) {
+    return entry.querySelector('.entry-title').textContent.trim().replace(/^the\s+/i, '').toLowerCase();
+  }
+
+  function alphabetical() {
+    const list = entries.slice().sort(function (a, b) {
+      return sortKey(a).localeCompare(sortKey(b));
+    });
+    show(list);
+  }
+
+  const bar = document.createElement('div');
+  bar.className = 'sort-bar';
+  const label = document.createElement('span');
+  label.className = 'filter-label';
+  label.textContent = 'Order:';
+  bar.appendChild(label);
+
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'sort-btn';
+  shuffleBtn.textContent = 'Shuffled';
+  const azBtn = document.createElement('button');
+  azBtn.className = 'sort-btn';
+  azBtn.textContent = 'A\u2013Z';
+
+  function mark(active) {
+    shuffleBtn.classList.toggle('active', active === shuffleBtn);
+    azBtn.classList.toggle('active', active === azBtn);
+    shuffleBtn.setAttribute('aria-pressed', String(active === shuffleBtn));
+    azBtn.setAttribute('aria-pressed', String(active === azBtn));
+  }
+
+  // Clicking "Shuffled" again deals a fresh random order.
+  shuffleBtn.onclick = function () { shuffle(); mark(shuffleBtn); };
+  azBtn.onclick = function () { alphabetical(); mark(azBtn); };
+
+  bar.appendChild(shuffleBtn);
+  bar.appendChild(azBtn);
+
+  const filterBar = document.getElementById('filterBar');
+  if (filterBar && filterBar.parentNode) {
+    filterBar.parentNode.insertBefore(bar, filterBar);
+  } else {
+    grid.parentNode.insertBefore(bar, grid);
+  }
+
+  shuffle();
+  mark(shuffleBtn);
+}
+
 // Both pages: builds one filter button per unique tag. Clicking buttons
 // hides/shows entries (adds/removes the "hidden" class), then calls
 // onChange() so a page can react (the map page updates its pins).
