@@ -214,8 +214,9 @@ function applyFilter(entries, activeTags) {
     const entryTags = Array.from(entry.querySelectorAll('.tag-chip')).map(function (c) {
       return c.textContent.trim();
     });
-    const shouldShow = activeTags.size === 0 || entryTags.some(function (t) {
-      return activeTags.has(t);
+    // A place must have EVERY selected tag to stay visible.
+    const shouldShow = Array.from(activeTags).every(function (t) {
+      return entryTags.indexOf(t) !== -1;
     });
     entry.classList.toggle('hidden', !shouldShow);
   });
