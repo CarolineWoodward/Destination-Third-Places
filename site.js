@@ -14,6 +14,35 @@ const MODAL_MIN_HEIGHT = 340;
 const ACCENT_COLORS = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89'];
 
 // ------------------------------------------------------------------
+// Image file endings
+// ------------------------------------------------------------------
+// If an image fails to load (for example the path says "Social Media.jpg"
+// but the uploaded file is "Social Media.PNG"), try the same name with the
+// other common endings before giving up. This makes a wrong capital letter
+// or png/jpg mix-up harmless.
+const IMAGE_ENDINGS = ['.png', '.PNG', '.jpg', '.JPG', '.jpeg', '.JPEG'];
+
+function imageFallback(img) {
+  const src = img.getAttribute('src') || '';
+  const match = src.match(/^(.*)\.[A-Za-z]+$/);
+  if (!match) return;
+  const tries = IMAGE_ENDINGS.map(function (ending) { return match[1] + ending; })
+    .filter(function (candidate) { return candidate !== src; });
+  img.onerror = function () {
+    const next = tries.shift();
+    if (next) { img.src = next; } else { img.onerror = null; }
+  };
+  // The image may already have failed before this ran.
+  if (img.complete && img.naturalWidth === 0) img.onerror();
+}
+
+// Main page: apply it to every photo on the cards (including the hidden
+// extra photos the popup uses).
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.entry img').forEach(imageFallback);
+});
+
+// ------------------------------------------------------------------
 // 1. Tag style system
 // ------------------------------------------------------------------
 // Same tag text always produces the same color + pattern + tilt, but
@@ -371,6 +400,7 @@ function openModal(entryEl) {
         branchFrame.className = 'branch-frame';
         const img = document.createElement('img');
         img.src = imgSource.getAttribute('src');
+        imageFallback(img);
         img.alt = imgSource.getAttribute('alt') || '';
         branchFrame.appendChild(img);
         branchFrame.appendChild(makePushpin(accentColor));
@@ -397,6 +427,7 @@ function openModal(entryEl) {
     }
   };
   modalImg.src = mainImg.getAttribute('src');
+  imageFallback(modalImg);
   modalImg.alt = mainImg.getAttribute('alt') || '';
 }
 
