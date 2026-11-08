@@ -442,3 +442,218 @@ function closeModalOnBackdrop(e) {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeModal();
 });
+
+// ------------------------------------------------------------------
+// 4. "Where would you like to go?"
+// ------------------------------------------------------------------
+// Two places on the main page, built from the same code:
+//   - a floating button (bottom right) that opens it as a small panel, so
+//     it's always one tap away, and
+//   - a closing section below the list of places.
+// Both build themselves, so index.html needs no changes.
+
+function buildNextStop(entries, uid) {
+  function entryAddress(entry) {
+    const el = entry.querySelector('.entry-location');
+    return (el.dataset.full || el.textContent).replace(/\s+/g, ' ').trim();
+  }
+  function townOf(entry) {
+    const parts = entryAddress(entry).split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  }
+  function title(entry) {
+    return entry.querySelector('.entry-title').textContent.replace(/\s+/g, ' ').trim();
+  }
+  function make(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  const body = make('div', 'next-stop-body');
+
+  const heading = make('h2', 'next-stop-heading', 'Where would you like to go?');
+  heading.id = 'nextStopHeading-' + uid;
+  body.appendChild(heading);
+
+  const controls = make('div', 'next-stop-controls');
+  const select = make('select', 'next-stop-select');
+  select.id = 'nextStopSelect-' + uid;
+  select.setAttribute('aria-label', 'Choose a place to visit');
+  const placeholder = make('option', '', 'Choose a place\u2026');
+  placeholder.value = '';
+  select.appendChild(placeholder);
+
+  // Group by town (A-Z), places A-Z within each town.
+  const byTown = {};
+  entries.forEach(function (entry, i) {
+    const town = townOf(entry);
+    (byTown[town] = byTown[town] || []).push({ entry: entry, index: i });
+  });
+  Object.keys(byTown).sort().forEach(function (town) {
+    const group = document.createElement('optgroup');
+    group.label = town;
+    byTown[town].sort(function (a, b) {
+      return title(a.entry).localeCompare(title(b.entry));
+    }).forEach(function (item) {
+      const option = make('option', '', title(item.entry));
+      option.value = String(item.index);
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+  controls.appendChild(select);
+
+  const surprise = make('button', 'stop-btn stop-btn-alt', 'Surprise me');
+  surprise.type = 'button';
+  controls.appendChild(surprise);
+  body.appendChild(controls);
+
+  const result = make('div', 'stop-result');
+  result.setAttribute('aria-live', 'polite');
+  body.appendChild(result);
+
+  body.appendChild(make('p', 'next-stop-closing',
+    'Third places are only third places if you show up.'));
+
+  function showTicket(index) {
+    result.innerHTML = '';
+    if (index === '' || isNaN(index)) return;
+    const entry = entries[Number(index)];
+    const accent = entry.dataset.accent || '#c17b5e';
+
+    const wrap = make('div', 'stop-ticket-wrap');
+    const ticket = make('div', 'stop-ticket');
+    ticket.style.setProperty('--stop-accent', accent);
+
+    ticket.appendChild(make('div', 'stop-label', 'Your next stop'));
+    ticket.appendChild(make('div', 'stop-title', title(entry)));
+    ticket.appendChild(make('div', 'stop-address', entryAddress(entry)));
+
+    const chips = Array.from(entry.querySelectorAll('.tag-chip'));
+    if (chips.length) {
+      const tags = make('div', 'stop-tags');
+      chips.forEach(function (chip) {
+        const strip = make('span', 'stop-tag', chip.textContent.trim());
+        applyTagStyle(strip, chip.textContent, false);
+        tags.appendChild(strip);
+      });
+      ticket.appendChild(tags);
+    }
+
+    const firstQuote = entry.querySelector('.quotes .quote');
+    if (firstQuote) {
+      const source = firstQuote.querySelector('.quote-source');
+      const quoteText = Array.from(firstQuote.childNodes)
+        .filter(function (n) { return n.nodeType === 3; })
+        .map(function (n) { return n.textContent; }).join('').trim();
+      const quote = make('div', 'stop-quote', quoteText);
+      if (source) quote.appendChild(make('span', 'stop-quote-source', source.textContent.trim()));
+      ticket.appendChild(quote);
+    }
+
+    const directions = make('a', 'stop-btn', 'Get directions \u2192');
+    directions.href = 'https://www.google.com/maps/search/?api=1&query=' +
+      encodeURIComponent(title(entry) + ', ' + entryAddress(entry));
+    directions.target = '_blank';
+    directions.rel = 'noopener noreferrer';
+    ticket.appendChild(directions);
+
+    wrap.appendChild(ticket);
+    result.appendChild(wrap);
+  }
+
+  select.addEventListener('change', function () { showTicket(select.value); });
+
+  surprise.addEventListener('click', function () {
+    let pick;
+    do {
+      pick = String(Math.floor(Math.random() * entries.length));
+    } while (entries.length > 1 && pick === select.value);
+    select.value = pick;
+    showTicket(pick);
+    // On the page (not in the small panel), scroll so the whole ticket is in view.
+    const shown = result.querySelector('.stop-ticket-wrap');
+    if (shown && shown.scrollIntoView && !body.closest('.next-panel')) {
+      shown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
+
+  return { body: body, select: select };
+}
+
+function setupNextStop(entries) {
+  const grid = document.getElementById('grid');
+  if (!grid || entries.length === 0) return;
+
+  // ---- Closing section below the list ----
+  const section = document.createElement('section');
+  section.className = 'next-stop';
+  const endBuild = buildNextStop(entries, 'end');
+  section.setAttribute('aria-labelledby', 'nextStopHeading-end');
+  section.appendChild(endBuild.body);
+  grid.insertAdjacentElement('afterend', section);
+
+  // ---- Floating button + panel ----
+  const fab = document.createElement('button');
+  fab.type = 'button';
+  fab.className = 'next-fab';
+  fab.setAttribute('aria-label', 'Where would you like to go?');
+  fab.setAttribute('aria-expanded', 'false');
+  fab.setAttribute('aria-controls', 'nextPanel');
+  fab.innerHTML =
+    '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M12 2C7.6 2 4 5.5 4 9.9c0 5.6 6.6 11.4 7.3 12a1 1 0 0 0 1.4 0c.7-.6 7.3-6.4 7.3-12C20 5.5 16.4 2 12 2zm0 10.6a2.8 2.8 0 1 1 0-5.6 2.8 2.8 0 0 1 0 5.6z"/>' +
+    '</svg>' +
+    '<span class="next-fab-label">Where to?</span>';
+
+  const panel = document.createElement('div');
+  panel.className = 'next-panel';
+  panel.id = 'nextPanel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'Where would you like to go?');
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'next-panel-close';
+  close.setAttribute('aria-label', 'Close');
+  close.innerHTML = '&times;';
+  panel.appendChild(close);
+
+  const panelBuild = buildNextStop(entries, 'panel');
+  panel.appendChild(panelBuild.body);
+
+  function openPanel() {
+    panel.classList.add('open');
+    fab.classList.add('open');
+    fab.setAttribute('aria-expanded', 'true');
+    panelBuild.select.focus({ preventScroll: true });
+  }
+  function closePanel() {
+    if (!panel.classList.contains('open')) return;
+    panel.classList.remove('open');
+    fab.classList.remove('open');
+    fab.setAttribute('aria-expanded', 'false');
+    fab.focus({ preventScroll: true });
+  }
+
+  fab.addEventListener('click', function () {
+    if (panel.classList.contains('open')) closePanel(); else openPanel();
+  });
+  close.addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePanel();
+  });
+
+  document.body.appendChild(panel);
+  document.body.appendChild(fab);
+}
+
+// Runs by itself on the main page, after the page's own setup (so the tag
+// styles are already assigned).
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(function () {
+    setupNextStop(Array.from(document.querySelectorAll('.entry')));
+  }, 0);
+});
