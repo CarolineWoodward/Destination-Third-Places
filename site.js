@@ -603,10 +603,12 @@ function setupNextStop(entries) {
   fab.setAttribute('aria-expanded', 'false');
   fab.setAttribute('aria-controls', 'nextPanel');
   fab.innerHTML =
-    '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">' +
-    '<path fill="currentColor" d="M12 2C7.6 2 4 5.5 4 9.9c0 5.6 6.6 11.4 7.3 12a1 1 0 0 0 1.4 0c.7-.6 7.3-6.4 7.3-12C20 5.5 16.4 2 12 2zm0 10.6a2.8 2.8 0 1 1 0-5.6 2.8 2.8 0 0 1 0 5.6z"/>' +
-    '</svg>' +
-    '<span class="next-fab-label">Where to?</span>';
+    '<span class="fab-ticket">' +
+      '<span class="fab-stub" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path fill="currentColor" d="M21.5 2.5 2.8 9.9c-.8.3-.8 1.4 0 1.7l6.2 2.3 2.3 6.2c.3.8 1.4.8 1.7 0L21.5 2.5zM10.2 13.1l6.3-6.3-4.8 8.4-1.5-2.1z"/></svg>' +
+      '</span>' +
+      '<span class="fab-main"><span class="fab-small">Admit one</span><span class="fab-big">Where to?</span></span>' +
+    '</span>';
 
   const panel = document.createElement('div');
   panel.className = 'next-panel';
@@ -626,7 +628,7 @@ function setupNextStop(entries) {
 
   function openPanel() {
     panel.classList.add('open');
-    fab.classList.add('open');
+    fab.classList.add('open', 'calm');
     fab.setAttribute('aria-expanded', 'true');
     panelBuild.select.focus({ preventScroll: true });
   }
