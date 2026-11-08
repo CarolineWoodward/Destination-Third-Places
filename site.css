@@ -1,1080 +1,661 @@
-/* site.css: styles for index.html and map.html */
+// =====================================================================
+// site.js: shared by index.html and map.html
+//   1. color helpers and the washi-tape tag styles
+//   2. tag corners (main page) and the tag filter bar (both pages)
+//   3. the click-to-open popup
+// =====================================================================
 
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
+const MODAL_NOTE_WIDTH = 300;
+const MODAL_MIN_HEIGHT = 340;
 
-* {
-  box-sizing: border-box;
+// Accent colors, in the same order as the :nth-child rules in site.css.
+// map.html reads entries from index.html as plain data, so it needs
+// its own copy of this list.
+const ACCENT_COLORS = ['#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f', '#5c8a89'];
+
+// ------------------------------------------------------------------
+// Image file endings
+// ------------------------------------------------------------------
+// If an image fails to load (for example the path says "Social Media.jpg"
+// but the uploaded file is "Social Media.PNG"), try the same name with the
+// other common endings before giving up. This makes a wrong capital letter
+// or png/jpg mix-up harmless.
+const IMAGE_ENDINGS = ['.png', '.PNG', '.jpg', '.JPG', '.jpeg', '.JPEG'];
+
+function imageFallback(img) {
+  const src = img.getAttribute('src') || '';
+  const match = src.match(/^(.*)\.[A-Za-z]+$/);
+  if (!match) return;
+  const tries = IMAGE_ENDINGS.map(function (ending) { return match[1] + ending; })
+    .filter(function (candidate) { return candidate !== src; });
+  img.onerror = function () {
+    const next = tries.shift();
+    if (next) { img.src = next; } else { img.onerror = null; }
+  };
+  // The image may already have failed before this ran.
+  if (img.complete && img.naturalWidth === 0) img.onerror();
 }
 
-body {
-  font-family: 'Poppins', sans-serif;
-  background-color: #faf6ef;
-  background-image: radial-gradient(#dcd5c7 1px, transparent 1px);
-  background-size: 22px 22px;
-  color: #3a3a3a;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 50px 30px 100px;
+// Main page: apply it to every photo on the cards (including the hidden
+// extra photos the popup uses).
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.entry img').forEach(imageFallback);
+});
+
+// ------------------------------------------------------------------
+// 1. Tag style system
+// ------------------------------------------------------------------
+// Same tag text always produces the same color + pattern + tilt, but
+// the combination of pattern and color gives far more visual variety
+// than a single repeating-stripe look.
+
+const TAG_COLORS = [
+  '#c17b5e', '#6b8ca8', '#d9a441', '#8a9a7e', '#c98b7f',
+  '#5c8a89', '#a3684f', '#7d6b9e', '#b5566b', '#4f6d5c',
+  '#d98c5f', '#7aa0c4', '#9b6b8e', '#6a9a6a', '#c4a24d',
+  '#3f6f8f', '#b3544a'
+];
+const TAG_ROTATIONS = [-7, -5, -3, 3, 5, 7];
+
+// Six distinct washi-tape patterns; each takes a base color and a
+// lighter accent derived from it.
+const TAG_PATTERNS = [
+  (c, light) => `background-color:${c};`,
+  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`,
+  (c, light) => `background-color:${c}; background-image: radial-gradient(${light} 1.8px, transparent 1.8px); background-size:9px 9px;`,
+  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(-45deg, transparent, transparent 4px, ${light} 4px, ${light} 8px);`,
+  (c, light) => `background-color:${c}; background-image: linear-gradient(90deg, ${light} 1px, transparent 1px), linear-gradient(0deg, ${light} 1px, transparent 1px); background-size:8px 8px;`,
+  (c, light) => `background-color:${c}; background-image: repeating-linear-gradient(0deg, transparent, transparent 5px, ${light} 5px, ${light} 10px);`,
+  // plaid: wide translucent bands one way, the other way, plus thin dark pinstripes
+  (c, light) => `background-color:${c}; background-image: linear-gradient(90deg, rgba(255,255,255,0.28) 7px, transparent 7px), linear-gradient(0deg, rgba(255,255,255,0.28) 7px, transparent 7px), linear-gradient(90deg, transparent 12px, rgba(0,0,0,0.28) 12px, rgba(0,0,0,0.28) 13px, transparent 13px), linear-gradient(0deg, transparent 12px, rgba(0,0,0,0.28) 12px, rgba(0,0,0,0.28) 13px, transparent 13px); background-size:20px 20px;`,
+  // gingham: a soft checkerboard
+  (c, light) => `background-color:${c}; background-image: conic-gradient(rgba(255,255,255,0.32) 25%, transparent 0 50%, rgba(255,255,255,0.32) 0 75%, transparent 0); background-size:14px 14px;`,
+  // floral: tiny five-petal flowers with a bright center
+  (c, light) => `background-color:${c}; background-image: radial-gradient(circle at 50% 50%, #fff3c4 1.6px, transparent 2px), radial-gradient(circle at 50% 22%, ${light} 2.3px, transparent 2.7px), radial-gradient(circle at 50% 78%, ${light} 2.3px, transparent 2.7px), radial-gradient(circle at 22% 50%, ${light} 2.3px, transparent 2.7px), radial-gradient(circle at 78% 50%, ${light} 2.3px, transparent 2.7px); background-size:18px 18px;`,
+  // zigzag
+  (c, light) => `background-color:${c}; background-image: linear-gradient(135deg, ${light} 25%, transparent 25%), linear-gradient(225deg, ${light} 25%, transparent 25%); background-size:12px 12px; background-position:-6px 0, 0 0;`,
+  // big polka dots
+  (c, light) => `background-color:${c}; background-image: radial-gradient(${light} 3px, transparent 3.5px); background-size:14px 14px;`
+];
+
+function hashText(text, salt) {
+  let hash = 0;
+  const s = salt + text;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) % 100000;
+  }
+  return Math.abs(hash);
 }
 
-h1 {
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: 3rem;
-  color: #2b2b2b;
-  margin-bottom: 6px;
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16)
+  };
 }
 
-.subtitle {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  max-width: 640px;
-  color: #555;
-  margin-bottom: 36px;
+function lighten(hex, amount) {
+  const { r, g, b } = hexToRgb(hex);
+  const mix = (channel) => Math.round(channel + (255 - channel) * amount);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-/* ---------------------------------------------------------------- */
-/* Filter bar                                                        */
-/* ---------------------------------------------------------------- */
-
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 50px;
-  align-items: center;
+function darken(hex, amount) {
+  const { r, g, b } = hexToRgb(hex);
+  const mix = (channel) => Math.round(channel * (1 - amount));
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-.filter-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
-  margin-right: 4px;
+// The glossy pushpin look, used on popup photos/quotes and map pins.
+function pushpinGradient(accentColor) {
+  return `radial-gradient(circle at 35% 35%, ${lighten(accentColor, 0.55)}, ${accentColor} 55%, ${darken(accentColor, 0.3)} 100%)`;
 }
 
-.filter-tag {
-  cursor: pointer;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 7px 16px;
-  border: none;
-  border-radius: 2px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-  opacity: 0.8;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+function makePushpin(accentColor) {
+  const pin = document.createElement('div');
+  pin.className = 'pushpin';
+  pin.style.backgroundImage = pushpinGradient(accentColor);
+  return pin;
 }
 
-.filter-tag:hover {
-  opacity: 1;
-  transform: translateY(-2px);
+// Picks readable text color + a matching shadow so the label stays
+// legible regardless of how busy or dark the tape pattern underneath is.
+function getTextStyle(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (luminance > 0.58) {
+    return {
+      color: '#2b2116',
+      shadow: '0 1px 0 rgba(255,255,255,0.75), 0 -1px 0 rgba(255,255,255,0.5), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5)'
+    };
+  }
+  return {
+    color: '#fdf6e3',
+    shadow: '0 2px 3px rgba(0,0,0,0.75), 0 0 4px rgba(0,0,0,0.5)'
+  };
 }
 
-.filter-tag.active {
-  opacity: 1;
-  outline: 2px solid #2b2b2b;
-  outline-offset: 2px;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
+const tagLookRegistry = {};
 
-/* ---------------------------------------------------------------- */
-/* Entry grid + polaroid cards                                       */
-/* ---------------------------------------------------------------- */
+function applyTagStyle(el, tagText, includeRotation) {
+  const key = tagText.trim().toLowerCase();
+  // Each new tag gets the next pattern and a color a few steps along the
+  // list, so no two tags look alike until the list runs out (10 patterns,
+  // 17 colors). A tag keeps its look as long as new posts are added at the
+  // end of the page.
+  if (!(key in tagLookRegistry)) tagLookRegistry[key] = Object.keys(tagLookRegistry).length;
+  const order = tagLookRegistry[key];
+  const colorIndex = (order * 7) % TAG_COLORS.length;
+  const patternIndex = order % TAG_PATTERNS.length;
+  const rotIndex = hashText(key, 'rotation') % TAG_ROTATIONS.length;
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 70px 40px;
-}
+  const color = TAG_COLORS[colorIndex];
+  const light = lighten(color, 0.4);
+  const textStyle = getTextStyle(color);
 
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
+  el.style.cssText += TAG_PATTERNS[patternIndex](color, light);
+  el.style.color = textStyle.color;
+  el.style.textShadow = textStyle.shadow;
+  if (includeRotation) {
+    el.style.transform = `rotate(${TAG_ROTATIONS[rotIndex]}deg)`;
   }
 }
 
-@media (max-width: 600px) {
-  .grid {
-    grid-template-columns: 1fr;
+// ------------------------------------------------------------------
+// 2. Tag corners + filter bar
+// ------------------------------------------------------------------
+
+// Main page only: the cards show just "Town, NY". The full street
+// address is kept in data-full so the popup (and the map) can use it.
+function shortenLocations(entries) {
+  entries.forEach(function (entry) {
+    const el = entry.querySelector('.entry-location');
+    if (!el || el.dataset.full) return;
+    const full = el.textContent.replace(/\s+/g, ' ').trim();
+    const parts = full.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    el.dataset.full = full;
+    el.textContent = parts.slice(-2).join(', ');
+  });
+}
+
+// Main page only: builds the corner tape tags on each photo, reading
+// from the hidden .tag-chip data inside each entry's caption.
+function addTagCorners(entries) {
+  shortenLocations(entries);
+  entries.forEach(function (entry) {
+    const polaroid = entry.querySelector('.polaroid');
+    const chips = Array.from(entry.querySelectorAll('.tag-chip'));
+    if (!polaroid || chips.length === 0) return;
+
+    const tagCorner = document.createElement('div');
+    tagCorner.className = 'tag-corner';
+    chips.forEach(function (chip) {
+      const strip = document.createElement('div');
+      strip.className = 'tag-strip';
+      strip.textContent = chip.textContent.trim();
+      applyTagStyle(strip, chip.textContent, true);
+      tagCorner.appendChild(strip);
+    });
+    polaroid.appendChild(tagCorner);
+  });
+}
+
+// Main page only: pins each card's accent color to its place in the
+// file (not its place on screen), so colors stay with their cards when
+// the order changes. Run this BEFORE reordering.
+function lockEntryColors(entries) {
+  entries.forEach(function (entry, i) {
+    const color = ACCENT_COLORS[i % ACCENT_COLORS.length];
+    entry.dataset.accent = color;
+    entry.style.setProperty('--accent', color);
+  });
+}
+
+// Main page only: a random order on every visit, plus an A-Z button.
+function setupSorting(grid, entries) {
+  if (!grid) return;
+
+  function show(list) {
+    list.forEach(function (entry) { grid.appendChild(entry); });
   }
-}
 
-.entry {
-  cursor: pointer;
-}
-
-.entry.hidden {
-  display: none;
-}
-
-/* Accent color cycles every 6 entries */
-.entry:nth-child(6n+1) { --accent: #c17b5e; }
-.entry:nth-child(6n+2) { --accent: #6b8ca8; }
-.entry:nth-child(6n+3) { --accent: #d9a441; }
-.entry:nth-child(6n+4) { --accent: #8a9a7e; }
-.entry:nth-child(6n+5) { --accent: #c98b7f; }
-.entry:nth-child(6n+6) { --accent: #5c8a89; }
-
-/* Alternating tilt */
-.entry:nth-child(odd) .polaroid { --rot: -3deg; }
-.entry:nth-child(even) .polaroid { --rot: 2.5deg; }
-
-.polaroid {
-  position: relative;
-  background: #fff;
-  padding: 12px 12px 34px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
-  transform: rotate(var(--rot, -2deg));
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.entry:hover .polaroid {
-  transform: rotate(0deg) scale(1.03);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
-}
-
-.tape {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-4deg);
-  width: 64px;
-  height: 22px;
-  background: var(--accent);
-  opacity: 0.85;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-.frame {
-  width: 100%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  min-height: 160px;
-}
-
-.frame img {
-  width: 100%;
-  display: block;
-}
-
-/* Tape tags, bottom-right corner of the photo */
-.tag-corner {
-  position: absolute;
-  bottom: 30px;
-  right: -10px;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-  gap: 6px;
-  z-index: 5;
-}
-
-.tag-strip {
-  padding: 5px 12px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border-radius: 1px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
-}
-
-/* ---------------------------------------------------------------- */
-/* Caption text                                                      */
-/* ---------------------------------------------------------------- */
-
-.caption {
-  margin-top: 16px;
-}
-
-.entry-title {
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: 1.6rem;
-  color: #2b2b2b;
-  margin-bottom: 2px;
-}
-
-.entry-location {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 6px;
-}
-
-.entry-text {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: #555;
-}
-
-.entry-hint {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-top: 8px;
-}
-
-/* Hidden data-source containers: their content is read by JS and
-   rendered elsewhere (tag corner, popup gallery, popup quotes), so
-   none of these three show up directly on the main grid. */
-.tags { display: none; }
-.gallery { display: none; }
-.quotes { display: none; }
-
-/* ---------------------------------------------------------------- */
-/* "Explore the map" link (main page)                                 */
-/* ---------------------------------------------------------------- */
-
-.map-link {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 34px;
-  padding: 14px 34px 12px;
-  font-family: 'Caveat', cursive;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-  text-decoration: none;
-  color: #3b2f26;
-  background-color: #fffaf0;
-  border: 2px dashed rgba(59, 47, 38, 0.4);
-  /* ticket-stub notches on the left and right edges */
-  -webkit-mask: radial-gradient(circle at 0 50%, transparent 8px, #000 8.5px) left / 51% 100% no-repeat,
-                radial-gradient(circle at 100% 50%, transparent 8px, #000 8.5px) right / 51% 100% no-repeat;
-  mask: radial-gradient(circle at 0 50%, transparent 8px, #000 8.5px) left / 51% 100% no-repeat,
-        radial-gradient(circle at 100% 50%, transparent 8px, #000 8.5px) right / 51% 100% no-repeat;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.22));
-  transform: rotate(-1.5deg);
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-/* a little arrow, like "this way" on a luggage tag */
-.map-link::after {
-  content: '\2192';
-  margin-left: 10px;
-  color: #c17b5e;
-}
-
-.map-link:hover {
-  transform: rotate(0deg) translateY(-2px);
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
-}
-
-/* Page navigation: the same three tickets at the top of every page */
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px 20px;
-  margin-bottom: 34px;
-}
-
-.site-nav .map-link {
-  margin-bottom: 0;
-}
-
-/* the page you are on: a darker, flat ticket that doesn't lift on hover */
-.map-link.current {
-  background-color: #f1d9c4;
-  cursor: default;
-}
-
-.map-link.current:hover {
-  transform: rotate(-1.5deg);
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.22));
-}
-
-/* ---------------------------------------------------------------- */
-/* Map page                                                           */
-/* ---------------------------------------------------------------- */
-
-.back-link {
-  display: inline-block;
-  margin-bottom: 22px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: #555;
-}
-
-.back-link:hover {
-  color: #2b2b2b;
-  text-decoration: underline;
-}
-
-.map-polaroid {
-  --accent: #6b8ca8;
-  position: relative;
-  background: #fff;
-  padding: 12px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
-}
-
-#map {
-  height: 72vh;
-  min-height: 460px;
-  width: 100%;
-  background: #e8e2d4;
-  isolation: isolate; /* keeps Leaflet's internal z-indexes below the popup */
-}
-
-.map-status {
-  margin-top: 16px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  color: #888;
-}
-
-.leaflet-container {
-  font-family: 'Poppins', sans-serif;
-}
-
-/* Pins */
-.map-pin-icon {
-  background: none;
-  border: none;
-}
-
-.map-pin {
-  position: relative;
-  width: 22px;
-  height: 34px;
-  cursor: pointer;
-  transform-origin: 50% 100%;
-  transition: transform 0.15s ease;
-}
-
-.map-pin:hover {
-  transform: translateY(-3px) scale(1.1);
-}
-
-.map-pin-head {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  box-shadow:
-    0 3px 5px rgba(0, 0, 0, 0.45),
-    inset -3px -3px 4px rgba(0, 0, 0, 0.3),
-    inset 3px 3px 4px rgba(255, 255, 255, 0.5);
-}
-
-.map-pin-needle {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  width: 2px;
-  height: 14px;
-  margin-left: -1px;
-  background: linear-gradient(#8a8a8a, #333);
-  border-radius: 0 0 1px 1px;
-}
-
-.leaflet-tooltip.map-tooltip {
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: #2b2b2b;
-  background: #fff;
-  border: none;
-  border-radius: 2px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  padding: 2px 10px;
-}
-
-/* Softens OpenStreetMap's colors slightly to suit the cream paper look.
-   Only affects the map tiles, not the pins. Delete to see the original. */
-.leaflet-tile-pane {
-  filter: sepia(0.25) saturate(0.85);
-}
-
-@media (max-width: 600px) {
-  #map {
-    height: 60vh;
-    min-height: 340px;
+  function shuffle() {
+    const list = entries.slice();
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    }
+    show(list);
   }
-}
-
-/* ---------------------------------------------------------------- */
-/* Modal pop-up                                                       */
-/* ---------------------------------------------------------------- */
-
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background-color: color-mix(in srgb, var(--modal-accent, #d98c3f) 14%, #faf6ef);
-  background-image: radial-gradient(color-mix(in srgb, var(--modal-accent, #d98c3f) 45%, #dcd5c7) 1px, transparent 1px);
-  background-size: 22px 22px;
-  align-items: flex-start;
-  justify-content: center;
-  z-index: 100;
-  padding: 40px 30px;
-  overflow-y: auto;
-}
-
-.modal-overlay.open {
-  display: flex;
-}
-
-.modal-box {
-  width: auto;
-  max-width: 90vw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #fff;
-  padding: 20px 20px 26px;
-  border-radius: 3px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-  transform: rotate(-1deg);
-  position: relative;
-}
-
-.modal-tape {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-3deg);
-  width: 80px;
-  height: 26px;
-  background: var(--modal-accent, #d98c3f);
-  opacity: 0.85;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.modal-top-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-}
-
-.modal-frame {
-  background: var(--modal-accent, #d98c3f);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 60vh;
-  flex: 0 0 auto;
-}
-
-.modal-frame img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.modal-note {
-  flex: 0 0 300px;
-  min-height: 0;
-  background: #fdf8ee;
-  color: #3a3a3a;
-  padding: 26px 28px;
-  font-size: 1rem;
-  line-height: 1.6;
-  border-left: 6px solid var(--modal-accent, #d98c3f);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.modal-note .entry-title {
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: #2b2b2b;
-  margin-bottom: 10px;
-}
-
-.modal-note .entry-location {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--modal-accent);
-  margin-top: -6px;
-  margin-bottom: 10px;
-}
-
-.modal-note .entry-text {
-  color: #555;
-  font-size: 1rem;
-}
-
-/* Extra photos and review quotes sit side by side below the main
-   photo + note row (they wrap onto separate lines on narrow screens). */
-.modal-extras {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px 44px;
-  max-width: 100%;
-}
-
-/* Extra photos, pinned */
-.modal-branch {
-  display: none;
-}
-
-.modal-branch.show {
-  display: flex;
-  margin-top: 28px;
-}
-
-.branch-frames {
-  display: flex;
-  gap: 30px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.branch-frame {
-  position: relative;
-  display: inline-block;
-  cursor: default;
-}
-
-.branch-frame img {
-  display: block;
-  max-width: 340px;
-  max-height: 400px;
-  width: auto;
-  height: auto;
-  border-radius: 4px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-}
-
-.branch-frame:nth-child(odd) { transform: rotate(-2deg); }
-.branch-frame:nth-child(even) { transform: rotate(1.5deg); }
-
-/* Review quotes, pinned and stacked in a column beside the photos */
-.modal-quote-branch {
-  display: none;
-}
-
-.modal-quote-branch.show {
-  display: flex;
-  margin-top: 28px;
-}
-
-.quote-cards {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 30px;
-  max-width: min(300px, 85vw);
-}
-
-.quote-card {
-  position: relative;
-  max-width: 270px;
-  padding: 22px 22px 20px;
-  border-radius: 2px;
-  border: 2px solid;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
-  font-size: 0.95rem;
-  line-height: 1.55;
-  font-style: italic;
-  color: #2b2b2b;
-}
-
-.quote-card:nth-child(odd) { transform: rotate(-2.5deg); }
-.quote-card:nth-child(even) { transform: rotate(2deg); }
-
-.quote-source {
-  display: block;
-  margin-top: 9px;
-  font-family: 'Space Mono', monospace;
-  font-style: normal;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  opacity: 0.7;
-}
-
-.pushpin {
-  position: absolute;
-  top: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  box-shadow:
-    0 3px 5px rgba(0, 0, 0, 0.5),
-    inset -2px -2px 3px rgba(0, 0, 0, 0.35),
-    inset 2px 2px 3px rgba(255, 255, 255, 0.5);
-  z-index: 6;
-}
-
-.modal-close {
-  position: fixed;
-  top: 20px;
-  right: 28px;
-  background: none;
-  border: none;
-  color: #2b2b2b;
-  font-size: 2.2rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 101;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-/* ---------------------------------------------------------------- */
-/* Order control (Shuffled / A-Z)                                    */
-/* ---------------------------------------------------------------- */
-
-.sort-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-bottom: 18px;
-  align-items: center;
-}
-
-.sort-btn {
-  cursor: pointer;
-  padding: 2px 0;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #888;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-}
-
-.sort-btn:hover {
-  color: #2b2b2b;
-}
-
-.sort-btn.active {
-  color: #2b2b2b;
-  border-bottom-color: #2b2b2b;
-}
-
-/* ---------------------------------------------------------------- */
-/* "Where would you like to go?" (end of the main page)              */
-/* ---------------------------------------------------------------- */
-
-.next-stop {
-  max-width: 640px;
-  margin: 70px auto 50px;
-  padding-top: 44px;
-  text-align: center;
-  border-top: 2px dashed rgba(59, 47, 38, 0.25);
-}
-
-.next-stop-heading {
-  margin: 0 0 22px;
-  font-family: 'Caveat', cursive;
-  font-size: 2.8rem;
-  line-height: 1.1;
-  color: #2b2b2b;
-}
-
-.next-stop-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  justify-content: center;
-  align-items: center;
-}
-
-.next-stop-select {
-  flex: 1 1 280px;
-  min-width: 0;
-  width: 100%;
-  max-width: 400px;
-  padding: 12px 14px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.95rem;
-  color: #2b2b2b;
-  background: #fffaf0;
-  border: 2px dashed rgba(59, 47, 38, 0.45);
-  border-radius: 2px;
-}
-
-.stop-btn {
-  display: inline-block;
-  cursor: pointer;
-  padding: 12px 22px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: #fff;
-  background: var(--stop-accent, #3b2f26);
-  border: 2px solid var(--stop-accent, #3b2f26);
-  border-radius: 2px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-}
-
-.stop-btn:hover {
-  transform: translateY(-2px);
-}
-
-.stop-btn-alt {
-  color: #3b2f26;
-  background: transparent;
-  border-color: #3b2f26;
-  box-shadow: none;
-  text-shadow: none;
-}
-
-.stop-result {
-  margin-top: 34px;
-  min-height: 1px;
-}
-
-.stop-ticket-wrap {
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.22));
-  transform: rotate(-1deg);
-  animation: stopIn 0.35s ease-out;
-}
 
-@keyframes stopIn {
-  from { opacity: 0; transform: translateY(10px) rotate(-3deg); }
-  to   { opacity: 1; transform: translateY(0) rotate(-1deg); }
-}
-
-.stop-ticket {
-  padding: 30px 40px 32px;
-  text-align: center;
-  background: #fffaf0;
-  border: 2px dashed rgba(59, 47, 38, 0.4);
-  border-top: 10px solid var(--stop-accent, #c17b5e);
-  -webkit-mask: radial-gradient(circle at 0 50%, transparent 11px, #000 11.5px) left / 51% 100% no-repeat,
-                radial-gradient(circle at 100% 50%, transparent 11px, #000 11.5px) right / 51% 100% no-repeat;
-  mask: radial-gradient(circle at 0 50%, transparent 11px, #000 11.5px) left / 51% 100% no-repeat,
-        radial-gradient(circle at 100% 50%, transparent 11px, #000 11.5px) right / 51% 100% no-repeat;
-}
-
-.stop-label {
-  margin-bottom: 10px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #888;
-}
-
-.stop-title {
-  margin-bottom: 8px;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.9rem;
-  font-weight: 700;
-  line-height: 1.15;
-  color: #2b2b2b;
-}
-
-.stop-address {
-  margin-bottom: 18px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--stop-accent, #c17b5e);
-}
-
-.stop-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-
-.stop-tag {
-  padding: 3px 10px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-.stop-quote {
-  margin: 0 auto 24px;
-  max-width: 460px;
-  font-style: italic;
-  font-size: 0.92rem;
-  line-height: 1.6;
-  color: #444;
-}
-
-.stop-quote-source {
-  display: block;
-  margin-top: 6px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.72rem;
-  font-style: normal;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #888;
-}
-
-.next-stop-closing {
-  margin: 44px 0 0;
-  font-family: 'Caveat', cursive;
-  font-size: 2rem;
-  line-height: 1.2;
-  color: #3b2f26;
-}
-
-@media (max-width: 600px) {
-  .stop-ticket { padding: 26px 24px 28px; }
-  .next-stop-heading { font-size: 2.3rem; }
-}
-
-/* ---------------------------------------------------------------- */
-/* Floating "Where to?" button and its panel                         */
-/* ---------------------------------------------------------------- */
-
-.next-fab {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 50;
-  padding: 0;
-  cursor: pointer;
-  color: #fffaf0;
-  background: none;
-  border: 0;
-  transform: rotate(-3deg);
-  transition: transform 0.15s ease;
-  /* the shadow sits here because the ticket below is cut with a mask */
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.32));
-}
-
-.next-fab:hover,
-.next-fab:focus-visible,
-.next-fab.open {
-  transform: translateY(-3px) rotate(-6deg);
-}
-
-/* the ticket, with half-circle notches punched in both sides */
-.fab-ticket {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  height: 56px;
-  background: #c17b5e;
-  -webkit-mask:
-    radial-gradient(circle 7px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
-    radial-gradient(circle 7px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
-  mask:
-    radial-gradient(circle 7px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
-    radial-gradient(circle 7px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
-}
-
-/* stitched border inside the ticket */
-.fab-ticket::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border: 1.5px dashed rgba(255, 250, 240, 0.55);
-  pointer-events: none;
-}
-
-.fab-stub {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  background: #a8654a;
-  /* perforated tear line */
-  border-right: 2px dashed rgba(255, 250, 240, 0.7);
-}
-
-.fab-main {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 18px 0 12px;
-  font-family: 'Space Mono', monospace;
-  text-align: left;
-  line-height: 1.15;
-}
-
-.fab-small {
-  font-size: 0.56rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  opacity: 0.8;
-}
-
-.fab-big {
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.next-fab:hover .fab-ticket,
-.next-fab:focus-visible .fab-ticket,
-.next-fab.open .fab-ticket {
-  background: #a8654a;
-}
-
-.next-fab:hover .fab-stub,
-.next-fab:focus-visible .fab-stub,
-.next-fab.open .fab-stub {
-  background: #8f523a;
-}
-
-/* Attention: every few seconds the ticket wiggles and a ring ripples out.
-   Both stop for good once someone has opened it. */
-.next-fab::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 3px solid #c17b5e;
-  border-radius: 8px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.next-fab:not(.calm)::before { animation: fab-ring 7s ease-out 2.5s infinite; }
-.next-fab:not(.calm) .fab-ticket { animation: fab-wiggle 7s ease-in-out 2.5s infinite; }
-
-@keyframes fab-ring {
-  0%, 80% { opacity: 0; transform: scale(1); }
-  82%     { opacity: 0.8; transform: scale(1); }
-  100%    { opacity: 0; transform: scale(1.35, 1.7); }
-}
-
-@keyframes fab-wiggle {
-  0%, 78%, 100% { transform: rotate(0); }
-  81%  { transform: rotate(-4deg) scale(1.05); }
-  84%  { transform: rotate(4deg) scale(1.05); }
-  87%  { transform: rotate(-3deg) scale(1.05); }
-  90%  { transform: rotate(2deg); }
-  93%  { transform: rotate(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .next-fab:not(.calm)::before,
-  .next-fab:not(.calm) .fab-ticket { animation: none; }
-}
-
-.next-panel {
-  position: fixed;
-  right: 22px;
-  bottom: 98px;
-  z-index: 60;
-  display: none;
-  width: min(440px, calc(100vw - 32px));
-  max-height: calc(100vh - 130px);
-  overflow-y: auto;
-  padding: 30px 22px 22px;
-  text-align: center;
-  background: #fffdf8;
-  border: 2px dashed rgba(59, 47, 38, 0.4);
-  border-radius: 3px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
-}
-
-.next-panel.open {
-  display: block;
-  animation: panelIn 0.2s ease-out;
-}
-
-@keyframes panelIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.next-panel-close {
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  padding: 0 6px;
-  cursor: pointer;
-  font-size: 1.7rem;
-  line-height: 1;
-  color: #666;
-  background: none;
-  border: none;
-}
-
-.next-panel-close:hover {
-  color: #000;
-}
-
-/* the panel is narrower, so scale the content down a little */
-.next-panel .next-stop-heading {
-  margin-bottom: 16px;
-  font-size: 2.1rem;
-}
-
-.next-panel .next-stop-select {
-  flex: 1 1 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.next-panel .stop-result {
-  margin-top: 22px;
-}
-
-.next-panel .stop-ticket {
-  padding: 22px 22px 24px;
-}
-
-.next-panel .stop-title {
-  font-size: 1.5rem;
-}
-
-.next-panel .stop-address {
-  font-size: 0.78rem;
-}
-
-.next-panel .next-stop-closing {
-  margin-top: 26px;
-  font-size: 1.6rem;
-}
-
-@media (max-width: 600px) {
-  .next-fab { right: 16px; bottom: 16px; }
-  .fab-ticket { height: 50px; }
-  .fab-stub { width: 40px; }
-  .fab-main { padding: 0 14px 0 10px; }
-  .fab-big { font-size: 0.82rem; }
-  .next-panel { right: 16px; bottom: 84px; }
-}
+  // Ignores a leading "The " so "The Rock Wall Pub" files under R.
+  function sortKey(entry) {
+    return entry.querySelector('.entry-title').textContent.trim().replace(/^the\s+/i, '').toLowerCase();
+  }
+
+  function alphabetical() {
+    const list = entries.slice().sort(function (a, b) {
+      return sortKey(a).localeCompare(sortKey(b));
+    });
+    show(list);
+  }
+
+  const bar = document.createElement('div');
+  bar.className = 'sort-bar';
+  const label = document.createElement('span');
+  label.className = 'filter-label';
+  label.textContent = 'Order:';
+  bar.appendChild(label);
+
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'sort-btn';
+  shuffleBtn.textContent = 'Shuffled';
+  const azBtn = document.createElement('button');
+  azBtn.className = 'sort-btn';
+  azBtn.textContent = 'A\u2013Z';
+
+  function mark(active) {
+    shuffleBtn.classList.toggle('active', active === shuffleBtn);
+    azBtn.classList.toggle('active', active === azBtn);
+    shuffleBtn.setAttribute('aria-pressed', String(active === shuffleBtn));
+    azBtn.setAttribute('aria-pressed', String(active === azBtn));
+  }
+
+  // Clicking "Shuffled" again deals a fresh random order.
+  shuffleBtn.onclick = function () { shuffle(); mark(shuffleBtn); };
+  azBtn.onclick = function () { alphabetical(); mark(azBtn); };
+
+  bar.appendChild(shuffleBtn);
+  bar.appendChild(azBtn);
+
+  const filterBar = document.getElementById('filterBar');
+  if (filterBar && filterBar.parentNode) {
+    filterBar.parentNode.insertBefore(bar, filterBar);
+  } else {
+    grid.parentNode.insertBefore(bar, grid);
+  }
+
+  shuffle();
+  mark(shuffleBtn);
+}
+
+// Both pages: builds one filter button per unique tag. Clicking buttons
+// hides/shows entries (adds/removes the "hidden" class), then calls
+// onChange() so a page can react (the map page updates its pins).
+function setupFilterBar(entries, onChange) {
+  const filterBar = document.getElementById('filterBar');
+  if (!filterBar) return;
+
+  const allTags = new Set();
+  entries.forEach(function (entry) {
+    entry.querySelectorAll('.tag-chip').forEach(function (chip) {
+      allTags.add(chip.textContent.trim());
+    });
+  });
+
+  const activeTags = new Set();
+
+  allTags.forEach(function (tagText) {
+    const btn = document.createElement('button');
+    btn.className = 'filter-tag';
+    btn.textContent = tagText;
+    applyTagStyle(btn, tagText, false);
+    btn.onclick = function () {
+      if (activeTags.has(tagText)) {
+        activeTags.delete(tagText);
+        btn.classList.remove('active');
+      } else {
+        activeTags.add(tagText);
+        btn.classList.add('active');
+      }
+      applyFilter(entries, activeTags);
+      if (onChange) onChange();
+    };
+    filterBar.appendChild(btn);
+  });
+}
+
+function applyFilter(entries, activeTags) {
+  entries.forEach(function (entry) {
+    const entryTags = Array.from(entry.querySelectorAll('.tag-chip')).map(function (c) {
+      return c.textContent.trim();
+    });
+    // A place must have EVERY selected tag to stay visible.
+    const shouldShow = Array.from(activeTags).every(function (t) {
+      return entryTags.indexOf(t) !== -1;
+    });
+    entry.classList.toggle('hidden', !shouldShow);
+  });
+}
+
+// ------------------------------------------------------------------
+// 3. Popup
+// ------------------------------------------------------------------
+
+function sizeMainFrame(imgEl) {
+  const modalFrame = document.getElementById('modalFrame');
+  const maxFrameHeight = window.innerHeight * 0.6;
+  const maxAllowedWidth = (window.innerWidth * 0.9) - MODAL_NOTE_WIDTH;
+
+  let renderedHeight = Math.min(maxFrameHeight, imgEl.naturalHeight);
+  let renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+  if (renderedWidth > maxAllowedWidth) {
+    renderedWidth = maxAllowedWidth;
+    renderedHeight = (imgEl.naturalHeight / imgEl.naturalWidth) * renderedWidth;
+  }
+  if (renderedHeight < MODAL_MIN_HEIGHT) {
+    renderedHeight = MODAL_MIN_HEIGHT;
+    renderedWidth = (imgEl.naturalWidth / imgEl.naturalHeight) * renderedHeight;
+    if (renderedWidth > maxAllowedWidth) renderedWidth = maxAllowedWidth;
+  }
+  modalFrame.style.width = renderedWidth + 'px';
+  modalFrame.style.height = renderedHeight + 'px';
+  return { width: renderedWidth, height: renderedHeight };
+}
+
+// entryEl is an .entry element. On the main page it's a live element;
+// on the map page it comes from index.html parsed as data, in which
+// case entryEl.dataset.accent holds its accent color.
+function openModal(entryEl) {
+  const mainImg = entryEl.querySelector('.frame img');
+  const titleHTML = entryEl.querySelector('.entry-title').outerHTML;
+  const locationEl = entryEl.querySelector('.entry-location');
+  let locationHTML = '';
+  if (locationEl) {
+    const fullLocation = document.createElement('div');
+    fullLocation.className = 'entry-location';
+    fullLocation.textContent = locationEl.dataset.full || locationEl.textContent.trim();
+    locationHTML = fullLocation.outerHTML;
+  }
+  const textHTML = entryEl.querySelector('.entry-text').outerHTML;
+  const extraImgs = Array.from(entryEl.querySelectorAll('.gallery img'));
+  const quoteSources = Array.from(entryEl.querySelectorAll('.quotes .quote'));
+
+  const modalImg = document.getElementById('modalImg');
+  const modalBranch = document.getElementById('modalBranch');
+  const branchFrames = document.getElementById('branchFrames');
+  const modalQuoteBranch = document.getElementById('modalQuoteBranch');
+  const quoteCards = document.getElementById('quoteCards');
+  const modalBox = document.getElementById('modalBox');
+  const modalOverlay = document.getElementById('modalOverlay');
+
+  const accentColor = entryEl.dataset.accent || getComputedStyle(entryEl).getPropertyValue('--accent').trim();
+  modalBox.style.setProperty('--modal-accent', accentColor);
+  modalOverlay.style.setProperty('--modal-accent', accentColor);
+
+  document.getElementById('modalNote').innerHTML = titleHTML + locationHTML + textHTML;
+  modalOverlay.classList.add('open');
+  branchFrames.innerHTML = '';
+  quoteCards.innerHTML = '';
+
+  modalImg.onload = function () {
+    sizeMainFrame(modalImg);
+
+    if (extraImgs.length > 0) {
+      modalBranch.classList.add('show');
+      extraImgs.forEach(function (imgSource) {
+        const branchFrame = document.createElement('div');
+        branchFrame.className = 'branch-frame';
+        const img = document.createElement('img');
+        img.src = imgSource.getAttribute('src');
+        imageFallback(img);
+        img.alt = imgSource.getAttribute('alt') || '';
+        branchFrame.appendChild(img);
+        branchFrame.appendChild(makePushpin(accentColor));
+        branchFrames.appendChild(branchFrame);
+      });
+    } else {
+      modalBranch.classList.remove('show');
+    }
+
+    if (quoteSources.length > 0) {
+      modalQuoteBranch.classList.add('show');
+      const tint = lighten(accentColor, 0.88);
+      quoteSources.forEach(function (quoteEl) {
+        const card = document.createElement('div');
+        card.className = 'quote-card';
+        card.innerHTML = quoteEl.innerHTML;
+        card.style.background = tint;
+        card.style.borderColor = accentColor;
+        card.appendChild(makePushpin(accentColor));
+        quoteCards.appendChild(card);
+      });
+    } else {
+      modalQuoteBranch.classList.remove('show');
+    }
+  };
+  modalImg.src = mainImg.getAttribute('src');
+  imageFallback(modalImg);
+  modalImg.alt = mainImg.getAttribute('alt') || '';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function closeModalOnBackdrop(e) {
+  if (e.target.id === 'modalOverlay') closeModal();
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ------------------------------------------------------------------
+// 4. "Where would you like to go?"
+// ------------------------------------------------------------------
+// Two places on the main page, built from the same code:
+//   - a floating button (bottom right) that opens it as a small panel, so
+//     it's always one tap away, and
+//   - a closing section below the list of places.
+// Both build themselves, so index.html needs no changes.
+
+function buildNextStop(entries, uid) {
+  function entryAddress(entry) {
+    const el = entry.querySelector('.entry-location');
+    return (el.dataset.full || el.textContent).replace(/\s+/g, ' ').trim();
+  }
+  function townOf(entry) {
+    const parts = entryAddress(entry).split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  }
+  function title(entry) {
+    return entry.querySelector('.entry-title').textContent.replace(/\s+/g, ' ').trim();
+  }
+  function make(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  const body = make('div', 'next-stop-body');
+
+  const heading = make('h2', 'next-stop-heading', 'Where would you like to go?');
+  heading.id = 'nextStopHeading-' + uid;
+  body.appendChild(heading);
+
+  const controls = make('div', 'next-stop-controls');
+  const select = make('select', 'next-stop-select');
+  select.id = 'nextStopSelect-' + uid;
+  select.setAttribute('aria-label', 'Choose a place to visit');
+  const placeholder = make('option', '', 'Choose a place\u2026');
+  placeholder.value = '';
+  select.appendChild(placeholder);
+
+  // Group by town (A-Z), places A-Z within each town.
+  const byTown = {};
+  entries.forEach(function (entry, i) {
+    const town = townOf(entry);
+    (byTown[town] = byTown[town] || []).push({ entry: entry, index: i });
+  });
+  Object.keys(byTown).sort().forEach(function (town) {
+    const group = document.createElement('optgroup');
+    group.label = town;
+    byTown[town].sort(function (a, b) {
+      return title(a.entry).localeCompare(title(b.entry));
+    }).forEach(function (item) {
+      const option = make('option', '', title(item.entry));
+      option.value = String(item.index);
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+  controls.appendChild(select);
+
+  const surprise = make('button', 'stop-btn stop-btn-alt', 'Surprise me');
+  surprise.type = 'button';
+  controls.appendChild(surprise);
+  body.appendChild(controls);
+
+  const result = make('div', 'stop-result');
+  result.setAttribute('aria-live', 'polite');
+  body.appendChild(result);
+
+  body.appendChild(make('p', 'next-stop-closing',
+    'Third places are only third places if you show up.'));
+
+  function showTicket(index) {
+    result.innerHTML = '';
+    if (index === '' || isNaN(index)) return;
+    const entry = entries[Number(index)];
+    const accent = entry.dataset.accent || '#c17b5e';
+
+    const wrap = make('div', 'stop-ticket-wrap');
+    const ticket = make('div', 'stop-ticket');
+    ticket.style.setProperty('--stop-accent', accent);
+
+    ticket.appendChild(make('div', 'stop-label', 'Your next stop'));
+    ticket.appendChild(make('div', 'stop-title', title(entry)));
+    ticket.appendChild(make('div', 'stop-address', entryAddress(entry)));
+
+    const chips = Array.from(entry.querySelectorAll('.tag-chip'));
+    if (chips.length) {
+      const tags = make('div', 'stop-tags');
+      chips.forEach(function (chip) {
+        const strip = make('span', 'stop-tag', chip.textContent.trim());
+        applyTagStyle(strip, chip.textContent, false);
+        tags.appendChild(strip);
+      });
+      ticket.appendChild(tags);
+    }
+
+    const firstQuote = entry.querySelector('.quotes .quote');
+    if (firstQuote) {
+      const source = firstQuote.querySelector('.quote-source');
+      const quoteText = Array.from(firstQuote.childNodes)
+        .filter(function (n) { return n.nodeType === 3; })
+        .map(function (n) { return n.textContent; }).join('').trim();
+      const quote = make('div', 'stop-quote', quoteText);
+      if (source) quote.appendChild(make('span', 'stop-quote-source', source.textContent.trim()));
+      ticket.appendChild(quote);
+    }
+
+    const directions = make('a', 'stop-btn', 'Get directions \u2192');
+    directions.href = 'https://www.google.com/maps/search/?api=1&query=' +
+      encodeURIComponent(title(entry) + ', ' + entryAddress(entry));
+    directions.target = '_blank';
+    directions.rel = 'noopener noreferrer';
+    ticket.appendChild(directions);
+
+    wrap.appendChild(ticket);
+    result.appendChild(wrap);
+  }
+
+  select.addEventListener('change', function () { showTicket(select.value); });
+
+  surprise.addEventListener('click', function () {
+    let pick;
+    do {
+      pick = String(Math.floor(Math.random() * entries.length));
+    } while (entries.length > 1 && pick === select.value);
+    select.value = pick;
+    showTicket(pick);
+    // On the page (not in the small panel), scroll so the whole ticket is in view.
+    const shown = result.querySelector('.stop-ticket-wrap');
+    if (shown && shown.scrollIntoView && !body.closest('.next-panel')) {
+      shown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
+
+  return { body: body, select: select };
+}
+
+function setupNextStop(entries) {
+  const grid = document.getElementById('grid');
+  if (!grid || entries.length === 0) return;
+
+  // ---- Closing section below the list ----
+  const section = document.createElement('section');
+  section.className = 'next-stop';
+  const endBuild = buildNextStop(entries, 'end');
+  section.setAttribute('aria-labelledby', 'nextStopHeading-end');
+  section.appendChild(endBuild.body);
+  grid.insertAdjacentElement('afterend', section);
+
+  // ---- Floating button + panel ----
+  const fab = document.createElement('button');
+  fab.type = 'button';
+  fab.className = 'next-fab';
+  fab.setAttribute('aria-label', 'Where would you like to go?');
+  fab.setAttribute('aria-expanded', 'false');
+  fab.setAttribute('aria-controls', 'nextPanel');
+  fab.innerHTML =
+    '<span class="fab-ticket">' +
+      '<span class="fab-stub" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path fill="currentColor" d="M21.5 2.5 2.8 9.9c-.8.3-.8 1.4 0 1.7l6.2 2.3 2.3 6.2c.3.8 1.4.8 1.7 0L21.5 2.5zM10.2 13.1l6.3-6.3-4.8 8.4-1.5-2.1z"/></svg>' +
+      '</span>' +
+      '<span class="fab-main"><span class="fab-big">Where to?</span></span>' +
+    '</span>';
+
+  const panel = document.createElement('div');
+  panel.className = 'next-panel';
+  panel.id = 'nextPanel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'Where would you like to go?');
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'next-panel-close';
+  close.setAttribute('aria-label', 'Close');
+  close.innerHTML = '&times;';
+  panel.appendChild(close);
+
+  const panelBuild = buildNextStop(entries, 'panel');
+  panel.appendChild(panelBuild.body);
+
+  function openPanel() {
+    panel.classList.add('open');
+    fab.classList.add('open', 'calm');
+    fab.setAttribute('aria-expanded', 'true');
+    panelBuild.select.focus({ preventScroll: true });
+  }
+  function closePanel() {
+    if (!panel.classList.contains('open')) return;
+    panel.classList.remove('open');
+    fab.classList.remove('open');
+    fab.setAttribute('aria-expanded', 'false');
+    fab.focus({ preventScroll: true });
+  }
+
+  fab.addEventListener('click', function () {
+    if (panel.classList.contains('open')) closePanel(); else openPanel();
+  });
+  close.addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePanel();
+  });
+
+  document.body.appendChild(panel);
+  document.body.appendChild(fab);
+}
+
+// Runs by itself on the main page, after the page's own setup (so the tag
+// styles are already assigned).
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(function () {
+    setupNextStop(Array.from(document.querySelectorAll('.entry')));
+  }, 0);
+});
