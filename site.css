@@ -870,59 +870,127 @@ h1 {
   right: 22px;
   bottom: 22px;
   z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 62px;
-  height: 62px;
   padding: 0;
   cursor: pointer;
-  color: #fff;
-  background: #c17b5e;
-  border: 3px solid #fffaf0;
-  border-radius: 50%;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  color: #fffaf0;
+  background: none;
+  border: 0;
+  transform: rotate(-3deg);
+  transition: transform 0.15s ease;
+  /* the shadow sits here because the ticket below is cut with a mask */
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.32));
 }
 
 .next-fab:hover,
 .next-fab:focus-visible,
 .next-fab.open {
   transform: translateY(-3px) rotate(-6deg);
-  background: #a8654a;
 }
 
-/* a little label that slides out on hover (not shown on touch screens) */
-.next-fab-label {
+/* the ticket, with half-circle notches punched in both sides */
+.fab-ticket {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 56px;
+  background: #c17b5e;
+  -webkit-mask:
+    radial-gradient(circle 7px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 7px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 7px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 7px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+/* stitched border inside the ticket */
+.fab-ticket::after {
+  content: '';
   position: absolute;
-  right: 72px;
-  padding: 6px 12px;
+  inset: 4px;
+  border: 1.5px dashed rgba(255, 250, 240, 0.55);
+  pointer-events: none;
+}
+
+.fab-stub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  background: #a8654a;
+  /* perforated tear line */
+  border-right: 2px dashed rgba(255, 250, 240, 0.7);
+}
+
+.fab-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 18px 0 12px;
   font-family: 'Space Mono', monospace;
-  font-size: 0.72rem;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.fab-small {
+  font-size: 0.56rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.fab-big {
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #3b2f26;
-  background: #fffaf0;
-  border: 2px dashed rgba(59, 47, 38, 0.4);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.next-fab:hover .fab-ticket,
+.next-fab:focus-visible .fab-ticket,
+.next-fab.open .fab-ticket {
+  background: #a8654a;
+}
+
+.next-fab:hover .fab-stub,
+.next-fab:focus-visible .fab-stub,
+.next-fab.open .fab-stub {
+  background: #8f523a;
+}
+
+/* Attention: every few seconds the ticket wiggles and a ring ripples out.
+   Both stop for good once someone has opened it. */
+.next-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px solid #c17b5e;
+  border-radius: 8px;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(8px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-@media (hover: hover) {
-  .next-fab:hover .next-fab-label,
-  .next-fab:focus-visible .next-fab-label {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.next-fab:not(.calm)::before { animation: fab-ring 7s ease-out 2.5s infinite; }
+.next-fab:not(.calm) .fab-ticket { animation: fab-wiggle 7s ease-in-out 2.5s infinite; }
+
+@keyframes fab-ring {
+  0%, 80% { opacity: 0; transform: scale(1); }
+  82%     { opacity: 0.8; transform: scale(1); }
+  100%    { opacity: 0; transform: scale(1.35, 1.7); }
 }
 
-.next-fab.open .next-fab-label {
-  opacity: 0;
+@keyframes fab-wiggle {
+  0%, 78%, 100% { transform: rotate(0); }
+  81%  { transform: rotate(-4deg) scale(1.05); }
+  84%  { transform: rotate(4deg) scale(1.05); }
+  87%  { transform: rotate(-3deg) scale(1.05); }
+  90%  { transform: rotate(2deg); }
+  93%  { transform: rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .next-fab:not(.calm)::before,
+  .next-fab:not(.calm) .fab-ticket { animation: none; }
 }
 
 .next-panel {
@@ -1003,6 +1071,10 @@ h1 {
 }
 
 @media (max-width: 600px) {
-  .next-fab { right: 16px; bottom: 16px; width: 56px; height: 56px; }
+  .next-fab { right: 16px; bottom: 16px; }
+  .fab-ticket { height: 50px; }
+  .fab-stub { width: 40px; }
+  .fab-main { padding: 0 14px 0 10px; }
+  .fab-big { font-size: 0.82rem; }
   .next-panel { right: 16px; bottom: 84px; }
 }
