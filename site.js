@@ -542,15 +542,12 @@ function buildNextStop(entries, uid) {
       ticket.appendChild(tags);
     }
 
-    const firstQuote = entry.querySelector('.quotes .quote');
-    if (firstQuote) {
-      const source = firstQuote.querySelector('.quote-source');
-      const quoteText = Array.from(firstQuote.childNodes)
-        .filter(function (n) { return n.nodeType === 3; })
-        .map(function (n) { return n.textContent; }).join('').trim();
-      const quote = make('div', 'stop-quote', quoteText);
-      if (source) quote.appendChild(make('span', 'stop-quote-source', source.textContent.trim()));
-      ticket.appendChild(quote);
+    // Your own description of the place (not a review quote).
+    const note = entry.querySelector('.entry-text');
+    if (note && note.textContent.trim()) {
+      const noteBox = make('div', 'stop-note');
+      noteBox.innerHTML = note.innerHTML;
+      ticket.appendChild(noteBox);
     }
 
     const directions = make('a', 'stop-btn', 'Get directions \u2192');
@@ -607,7 +604,7 @@ function setupNextStop(entries) {
       '<span class="fab-stub" aria-hidden="true">' +
         '<svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path fill="currentColor" d="M21.5 2.5 2.8 9.9c-.8.3-.8 1.4 0 1.7l6.2 2.3 2.3 6.2c.3.8 1.4.8 1.7 0L21.5 2.5zM10.2 13.1l6.3-6.3-4.8 8.4-1.5-2.1z"/></svg>' +
       '</span>' +
-      '<span class="fab-main"><span class="fab-small">Admit one</span><span class="fab-big">Where to?</span></span>' +
+      '<span class="fab-main"><span class="fab-big">Where to?</span></span>' +
     '</span>';
 
   const panel = document.createElement('div');
