@@ -114,7 +114,7 @@
   // rules, and each answer is remembered in the visitor's browser, so
   // repeat visits are instant.
 
-  const PIN_CACHE_KEY = 'third-places-pin-cache-v1';
+  const PIN_CACHE_KEY = 'third-places-pin-cache-v2';
   let lastLookupAt = 0;
   let lookupsBlocked = false;
   let userMovedMap = false;
@@ -148,6 +148,29 @@
     return parts.slice(-2).join(', ');
   }
 
+  // "Walden" and "Montgomery" are neighbors (Walden is inside the Town of
+  // Montgomery), so a lookup can land in the wrong one. These helpers check
+  // that an answer is really in the town written on the location line.
+  function simplify(text) {
+    return (text || '').toLowerCase().replace(/^(town|village|city) of /, '').replace(/[^a-z]/g, '');
+  }
+
+  function placeOf(address) {
+    return address.city || address.village || address.hamlet || address.town || address.municipality || '';
+  }
+
+  function isInTown(candidate, townName) {
+    const found = simplify(placeOf(candidate.address));
+    const wanted = simplify(townName);
+    return !!found && !!wanted && (found === wanted || found.indexOf(wanted) !== -1 || wanted.indexOf(found) !== -1);
+  }
+
+  // Suite and unit numbers ("Ste 3") only confuse the lookup.
+  function withoutSuite(address) {
+    return address.replace(/\s+\b(?:ste|suite|unit|apt)\b\.?\s*#?\s*[\w-]+/ig, '');
+  }
+
+  // Returns up to 5 possible matches, best first.
   async function askOpenStreetMap(query) {
     const wait = lastLookupAt + 1100 - Date.now();
     if (wait > 0) await new Promise(function (resolve) { setTimeout(resolve, wait); });
@@ -155,34 +178,54 @@
 
     // bounded=1 keeps answers inside the Orange County area, so a
     // "Water Street" in some other state can't be picked by mistake.
-    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&viewbox=-75.0,41.8,-73.8,41.0&bounded=1&q=' + encodeURIComponent(query);
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=us&viewbox=-75.0,41.8,-73.8,41.0&bounded=1&q=' + encodeURIComponent(query);
     const res = await fetch(url);
     if (res.status === 429 || res.status === 403) lookupsBlocked = true;
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    if (!data.length) return null;
-    // If OpenStreetMap could only find the town (not the street address),
-    // the pin is flagged as approximate.
-    const approximate = /^(city|town|village|hamlet|suburb|municipality|county|state|neighbourhood|quarter|borough|city_district)$/.test(data[0].addresstype || '');
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), approximate: approximate };
+    return data.map(function (d) {
+      return {
+        lat: parseFloat(d.lat),
+        lng: parseFloat(d.lon),
+        // If OpenStreetMap could only find the town (not the street address),
+        // the pin is flagged as approximate.
+        approximate: /^(city|town|village|hamlet|suburb|municipality|county|state|neighbourhood|quarter|borough|city_district)$/.test(d.addresstype || ''),
+        address: d.address || {}
+      };
+    });
   }
 
   async function findAddress(entry, address) {
+    const townText = townOf(address);               // "Montgomery, NY"
+    const townName = townText.split(',')[0];        // "Montgomery"
+    const queries = [withoutSuite(address)];
+    // Highway names: "92 NY-284" is also written "92 State Route 284".
+    const spelledOut = queries[0].replace(/\bNY-(\d+[A-Z]?)\b/g, 'State Route $1');
+    if (spelledOut !== queries[0]) queries.push(spelledOut);
+    queries.push(entryTitle(entry) + ', ' + townText);
+
+    let firstSeen = null;
     try {
-      let hit = await askOpenStreetMap(address);
-      // Highway names: "92 NY-284" is also written "92 State Route 284".
-      const spelledOut = address.replace(/\bNY-(\d+[A-Z]?)\b/g, 'State Route $1');
-      if (!hit && !lookupsBlocked && spelledOut !== address) {
-        hit = await askOpenStreetMap(spelledOut);
+      for (let i = 0; i < queries.length && !lookupsBlocked; i++) {
+        const list = await askOpenStreetMap(queries[i]);
+        if (list.length === 0) continue;
+        if (!firstSeen) firstSeen = list[0];
+        const match = list.find(function (candidate) { return isInTown(candidate, townName); });
+        if (match) return match;
       }
-      if (!hit && !lookupsBlocked) {
-        hit = await askOpenStreetMap(entryTitle(entry) + ', ' + townOf(address));
+
+      // Every answer was in a different town: better a pin in the right
+      // town (marked approximate) than one in the wrong town.
+      if (!lookupsBlocked) {
+        const townList = await askOpenStreetMap(townText);
+        if (townList.length) {
+          return { lat: townList[0].lat, lng: townList[0].lng, approximate: true };
+        }
       }
-      return hit;
     } catch (err) {
       console.warn('Address lookup failed for "' + address + '":', err);
-      return null;
     }
+    return firstSeen ? { lat: firstSeen.lat, lng: firstSeen.lng, approximate: true } : null;
   }
 
   function placePin(entry, lat, lng, approximate) {
